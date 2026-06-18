@@ -578,16 +578,31 @@
                             min: xPositions['1M'] - 0.5,
                             max: xPositions['30Y'] + 1,
                             ticks: {
+                                // Generate ticks at exact maturity positions
                                 callback: function(value) {
-                                    // Show maturity labels at their X positions
-                                    const mat = maturityOrder.find(m => Math.abs(xPositions[m] - value) < 0.01);
+                                    const mat = maturityOrder.find(m => Math.abs(xPositions[m] - value) < 0.1);
                                     return mat || '';
                                 },
-                                stepSize: 1,
-                                autoSkip: false
+                                // Force ticks at maturity positions
+                                autoSkip: false,
+                                maxRotation: 0,
+                                font: {
+                                    size: 11
+                                }
+                            },
+                            afterBuildTicks: function(axis) {
+                                // Override ticks to only show at maturity positions
+                                axis.ticks = maturityOrder.map(mat => ({
+                                    value: xPositions[mat],
+                                    label: mat
+                                }));
                             },
                             grid: {
-                                display: true
+                                display: true,
+                                color: 'rgba(255, 255, 255, 0.08)',  // Subtle gray
+                                drawOnChartArea: true,
+                                drawTicks: false,
+                                lineWidth: 1
                             }
                         },
                         y: {
@@ -685,16 +700,30 @@
                             min: xPositions['1M'] - 0.5,
                             max: xPositions['30Y'] + 1,
                             ticks: {
+                                // Generate ticks at exact maturity positions
                                 callback: function(value) {
-                                    // Show ALL maturity labels (fixed axis)
-                                    const mat = maturityOrder.find(m => Math.abs(xPositions[m] - value) < 0.01);
+                                    const mat = maturityOrder.find(m => Math.abs(xPositions[m] - value) < 0.1);
                                     return mat || '';
                                 },
-                                stepSize: 1,
-                                autoSkip: false
+                                autoSkip: false,
+                                maxRotation: 0,
+                                font: {
+                                    size: 11
+                                }
+                            },
+                            afterBuildTicks: function(axis) {
+                                // Override ticks to only show at maturity positions
+                                axis.ticks = maturityOrder.map(mat => ({
+                                    value: xPositions[mat],
+                                    label: mat
+                                }));
                             },
                             grid: {
-                                display: true
+                                display: true,
+                                color: 'rgba(255, 255, 255, 0.08)',  // Subtle gray
+                                drawOnChartArea: true,
+                                drawTicks: false,
+                                lineWidth: 1
                             }
                         },
                         y: {
