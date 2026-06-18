@@ -530,6 +530,11 @@
         function renderCurrentYieldCurve() {
             const ctx = document.getElementById('currentYieldChart').getContext('2d');
             
+            // Destroy existing chart if it exists
+            if (charts.currentYield) {
+                charts.currentYield.destroy();
+            }
+            
             // Build dataset as {x, y} points for scatter chart
             const dataPoints = maturityOrder.map(mat => {
                 const yValue = currentData.yield_curve[mat];
@@ -597,6 +602,31 @@
             renderSpreadIndicator('currentSpreadIndicator', currentData.spread_10y_2y);
         }
         
+        
+        function renderCurrentEconomicIndicators() {
+            const container = document.getElementById('currentEconomicMetrics');
+            const indicators = [
+                { key: 'unemployment', label: 'Unemployment', suffix: '%' },
+                { key: 'cpi_yoy', label: 'CPI (YoY)', suffix: '%' },
+                { key: 'fed_funds', label: 'Fed Funds Rate', suffix: '%' }
+            ];
+            
+            let html = '';
+            indicators.forEach(ind => {
+                const info = currentData.economic[ind.key];
+                if (info && info.value !== null) {
+                    html += `
+                        <div class="metric">
+                            <div class="metric-label">${ind.label}</div>
+                            <div class="metric-value">${info.value.toFixed(2)}${ind.suffix}</div>
+                            <div class="metric-change neutral">as of ${info.date}</div>
+                        </div>
+                    `;
+                }
+            });
+            container.innerHTML = html;
+        }
+
         function renderHistoricalYieldCurve(index) {
             const data = historicalData.yield_curves_monthly[index];
             document.getElementById('historicalDate').textContent = data.date;
