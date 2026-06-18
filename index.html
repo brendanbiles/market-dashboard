@@ -419,7 +419,7 @@
                             <button class="btn btn-secondary" onclick="jumpToDate('2008-09-15')">2008 Crisis</button>
                             <button class="btn btn-secondary" onclick="jumpToDate('2020-03-23')">COVID-19</button>
                             <button class="btn btn-secondary" onclick="jumpToDate('2022-11-01')">2022 Rates</button>
-                            <button class="btn" onclick="playTimeLapse()">▶ Play Time-Lapse</button>
+                            <button class="btn" onclick="playTimeLapse()">Play Time-Lapse</button>
                         </div>
                     </div>
                     
@@ -430,7 +430,7 @@
                 
 <!-- Inversion Period Histories -->
 <div style="margin-top: 30px; padding: 20px; background: rgba(255,255,255,0.03); border-radius: 8px;">
-    <h3 style="margin-top: 0; color: #4fc3f7; font-size: 1.3em;">📚 Historical Inversion Periods</h3>
+    <h3 style="margin-top: 0; color: #4fc3f7; font-size: 1.3em;">Historical Inversion Periods</h3>
     <p style="color: #999; margin-bottom: 25px;">Educational reference: What was happening during each yield curve inversion?</p>
     
     <!-- 1978-1980: Volcker's Arrival -->
@@ -498,7 +498,7 @@
     </div>
     
     <div style="margin-top: 25px; padding: 15px; background: rgba(76, 175, 80, 0.1); border-left: 3px solid #4caf50; border-radius: 4px;">
-        <p style="margin: 0; color: #81c784; font-size: 0.95em;"><strong>📖 Key Takeaway:</strong> Yield curve inversions historically precede recessions by 6-24 months. They signal that credit expansion has created unsustainable economic structures. Austrian theory explains inversions as the market recognizing that long-term investments funded by artificially cheap credit won't survive at normalized rates.</p>
+        <p style="margin: 0; color: #81c784; font-size: 0.95em;"><strong>Key Takeaway:</strong> Yield curve inversions historically precede recessions by 6-24 months. They signal that credit expansion has created unsustainable economic structures. Austrian theory explains inversions as the market recognizing that long-term investments funded by artificially cheap credit won't survive at normalized rates.</p>
     </div>
 </div>
 
@@ -534,7 +534,7 @@
             <!-- TAB 3: Economic Trends -->
             <div class="tab-content" data-tab="trends">
                 <div class="card" style="background: rgba(29, 155, 240, 0.05); border: 1px solid rgba(29, 155, 240, 0.2);">
-                    <h2>📊 Economic Trends</h2>
+                    <h2>Economic Trends</h2>
                     <p style="color: #999; margin-bottom: 15px;">Historical data with synchronized time range control</p>
                     
                     <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
@@ -548,32 +548,30 @@
                     </div>
                 </div>
                 
-                <div class="card">
-                    <h2>📈 10Y-2Y Spread Over Time</h2>
-                    <div class="chart-container">
-                        <canvas id="spreadTrendChart"></canvas>
-                    </div>
-                </div>
                 
                 <div class="card">
+                    <h2>Fed Funds Rate</h2>
+                    <div class="chart-container">
+                        <canvas id="fedFundsChart"></canvas>
+                    </div>
+                
+                <div class="card">
+                    <h2>Inflation Rate (CPI YoY)</h2>
+                    <div class="chart-container">
+                        <canvas id="inflationChart"></canvas>
+                    </div>
+                
+                    <h2>Unemployment Rate</h2>
                     <h2>📊 Unemployment Rate</h2>
                     <div class="chart-container">
                         <canvas id="unemploymentChart"></canvas>
                     </div>
-                </div>
-                
                 <div class="card">
-                    <h2>💰 Fed Funds Rate</h2>
+                    <h2>2Y-10Y Spread</h2>
                     <div class="chart-container">
-                        <canvas id="fedFundsChart"></canvas>
+                        <canvas id="spreadTrendChart"></canvas>
                     </div>
                 </div>
-                
-                <div class="card">
-                    <h2>🔥 Inflation Rate (CPI YoY)</h2>
-                    <div class="chart-container">
-                        <canvas id="inflationChart"></canvas>
-                    </div>
                 </div>
             </div>
                 </div>
@@ -931,7 +929,7 @@
             
             const isInverted = spread < 0;
             const className = isInverted ? 'spread-negative' : 'spread-positive';
-            const label = isInverted ? '⚠️ INVERTED' : '✓ Normal';
+            const label = isInverted ? 'INVERTED' : 'Normal';
             
             container.innerHTML = `
                 <div class="spread-indicator ${className}">
@@ -1253,7 +1251,7 @@
             
             isPlaying = true;
             const btn = event.target;
-            btn.textContent = '⏸ Pause';
+            btn.textContent = 'Pause';
             btn.disabled = true;
             
             const slider = document.getElementById('dateSlider');
@@ -1263,7 +1261,7 @@
                 if (currentIndex >= historicalData.yield_curves_monthly.length - 1) {
                     clearInterval(interval);
                     isPlaying = false;
-                    btn.textContent = '▶ Play Time-Lapse';
+                    btn.textContent = 'Play Time-Lapse';
                     btn.disabled = false;
                     return;
                 }
