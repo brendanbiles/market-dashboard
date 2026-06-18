@@ -219,18 +219,10 @@
                 <div id="spreadIndicator"></div>
             </div>
             
-            <div class="grid">
-                <!-- Market Indices -->
-                <div class="card">
-                    <h2>📈 Market Indices</h2>
-                    <div class="metric-grid" id="marketMetrics"></div>
-                </div>
-                
-                <!-- Economic Indicators -->
-                <div class="card">
-                    <h2>📊 Economic Indicators</h2>
-                    <div class="metric-grid" id="economicMetrics"></div>
-                </div>
+            <!-- Economic Indicators (Full Width) -->
+            <div class="card">
+                <h2>📊 Economic Indicators</h2>
+                <div class="metric-grid" id="economicMetrics"></div>
             </div>
         </div>
         
@@ -372,30 +364,7 @@
             `;
         }
         
-        function renderMarketMetrics(data) {
-            const container = document.getElementById('marketMetrics');
-            let html = '';
-            
-            Object.entries(data.market).forEach(([ticker, info]) => {
-                if (info.price === null) return;
-                
-                const changeClass = info.change_pct > 0 ? 'positive' : info.change_pct < 0 ? 'negative' : 'neutral';
-                const changeSymbol = info.change_pct > 0 ? '▲' : info.change_pct < 0 ? '▼' : '−';
-                
-                html += `
-                    <div class="metric">
-                        <div class="metric-label">${info.name}</div>
-                        <div class="metric-value">${ticker === '^VIX' ? info.price.toFixed(2) : formatCurrency(info.price)}</div>
-                        <div class="metric-change ${changeClass}">
-                            ${changeSymbol} ${Math.abs(info.change_pct).toFixed(2)}%
-                        </div>
-                    </div>
-                `;
-            });
-            
-            container.innerHTML = html;
-        }
-        
+
         function renderEconomicMetrics(data) {
             const container = document.getElementById('economicMetrics');
             let html = '';
@@ -431,7 +400,6 @@
                     
                     createYieldCurveChart(data);
                     renderSpreadIndicator(data.spread_10y_2y);
-                    renderMarketMetrics(data);
                     renderEconomicMetrics(data);
                     
                     document.getElementById('loading').style.display = 'none';

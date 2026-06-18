@@ -1,5 +1,5 @@
 """
-Fetch financial and economic data from FRED and Yahoo Finance.
+Fetch financial and economic data from FRED.
 Outputs to data.json for the static dashboard to consume.
 """
 
@@ -9,7 +9,6 @@ from datetime import datetime, timezone
 from typing import Dict, Any
 
 import requests
-import yfinance as yf
 
 
 # Configuration
@@ -38,13 +37,9 @@ ECONOMIC_SERIES = {
     "fed_funds": "FEDFUNDS",
 }
 
-# Market tickers
-MARKET_TICKERS = {
-    "SPY": "S&P 500",
-    "QQQ": "Nasdaq 100",
-    "DIA": "Dow Jones",
-    "^VIX": "VIX",
-}
+# Market tickers - REMOVED: Too easy to find on Google
+# Focusing on hard-to-visualize economic data instead
+MARKET_TICKERS = {}
 
 
 def fetch_fred_series(series_id: str, limit: int = 1) -> Dict[str, Any]:
@@ -97,32 +92,9 @@ def fetch_economic_indicators() -> Dict[str, Any]:
 
 def fetch_market_data() -> Dict[str, Any]:
     """Fetch current market data from Yahoo Finance."""
-    market_data = {}
-    
-    for ticker, name in MARKET_TICKERS.items():
-        try:
-            stock = yf.Ticker(ticker)
-            hist = stock.history(period="5d")
-            
-            if len(hist) >= 2:
-                current_price = hist["Close"].iloc[-1]
-                prev_price = hist["Close"].iloc[-2]
-                change_pct = ((current_price - prev_price) / prev_price) * 100
-                
-                market_data[ticker] = {
-                    "name": name,
-                    "price": round(current_price, 2),
-                    "change_pct": round(change_pct, 2),
-                }
-        except Exception as e:
-            print(f"Error fetching {ticker}: {e}")
-            market_data[ticker] = {
-                "name": name,
-                "price": None,
-                "change_pct": None,
-            }
-    
-    return market_data
+    # REMOVED: Market indices are too easy to find elsewhere
+    # Focusing on hard-to-visualize economic data
+    return {}
 
 
 def calculate_spread(curve: Dict[str, Any]) -> float | None:
@@ -139,7 +111,6 @@ def main():
     try:
         yield_curve = fetch_yield_curve()
         economic = fetch_economic_indicators()
-        market = fetch_market_data()
         spread = calculate_spread(yield_curve)
         
         output = {
@@ -147,7 +118,6 @@ def main():
             "yield_curve": yield_curve,
             "spread_10y_2y": spread,
             "economic": economic,
-            "market": market,
         }
         
         with open("data.json", "w") as f:
@@ -156,7 +126,7 @@ def main():
         print("[OK] Data updated successfully")
         print(f"   Yield curve: {len([v for v in yield_curve.values() if v])} maturities")
         print(f"   10Y-2Y spread: {spread}%")
-        print(f"   Market data: {len([v for v in market.values() if v['price']])}/{len(market)} tickers")
+        print(f"   Economic indicators: {len(economic)} series")
         
     except Exception as e:
         print(f"[ERROR] {e}")
