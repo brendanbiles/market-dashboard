@@ -628,7 +628,6 @@
             renderUnemploymentTrend();
             renderFedFundsTrend();
             renderInflationTrend();
-            renderInflationTrend();
             
             // Setup slider
             const slider = document.getElementById('dateSlider');
@@ -1126,58 +1125,6 @@
         }
         
 
-        function renderInflationTrend() {
-            const ctx = document.getElementById('inflationChart').getContext('2d');
-            
-            charts.inflationTrend = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: historicalData.economic_indicators.cpi_yoy.map(d => d.date),
-                    datasets: [{
-                        label: 'CPI YoY (%)',
-                        data: historicalData.economic_indicators.cpi_yoy.map(d => d.value),
-                        borderColor: '#f4212e',
-                        backgroundColor: 'rgba(244, 33, 46, 0.1)',
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.1,
-                        pointRadius: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false }
-                    },
-                    scales: {
-                        x: {
-                            ticks: {
-                                maxRotation: 0,
-                                autoSkip: true,
-                                maxTicksLimit: 12,
-                                callback: function(value, index, values) {
-                                    const date = this.getLabelForValue(value);
-                                    if (!date) return '';
-                                    const year = date.split('-')[0];
-                                    const totalLabels = values.length;
-                                    const skipFactor = Math.ceil(totalLabels / 12);
-                                    return index % skipFactor === 0 ? year : '';
-                                }
-                            },
-                            grid: {
-                                display: false
-                            }
-                        },
-                        y: {
-                            ticks: {
-                                callback: value => value.toFixed(1) + '%'
-                            }
-                        }
-                    }
-                }
-            });
-        }
 
         function jumpToDate(targetDate) {
             const index = historicalData.yield_curves_monthly.findIndex(d => d.date === targetDate);
