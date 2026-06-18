@@ -501,43 +501,90 @@
             });
         }
         
+        // Maturity mapping: convert maturity to years
+        function maturityToYears(mat) {
+            const map = {
+                '1M': 1/12, '3M': 3/12, '6M': 6/12,
+                '1Y': 1, '2Y': 2, '3Y': 3, '5Y': 5, '7Y': 7,
+                '10Y': 10, '20Y': 20, '30Y': 30
+            };
+            return map[mat];
+        }
+        
+        // Custom X-axis positioning (logarithmic-ish for professional look)
+        // Mix 90% linear + 10% log for subtle but noticeable spacing
+        function getXPosition(mat) {
+            const years = maturityToYears(mat);
+            const linear = years;
+            const log = Math.log(years + 1) * 8;
+            return linear * 0.9 + log * 0.1;
+        }
+        
+        // Get all X positions for fixed axis
+        const maturityOrder = ['1M', '3M', '6M', '1Y', '2Y', '3Y', '5Y', '7Y', '10Y', '20Y', '30Y'];
+        const xPositions = {};
+        maturityOrder.forEach(mat => {
+            xPositions[mat] = getXPosition(mat);
+        });
+        
         function renderCurrentYieldCurve() {
             const ctx = document.getElementById('currentYieldChart').getContext('2d');
-            const maturityOrder = ['1M', '3M', '6M', '1Y', '2Y', '3Y', '5Y', '7Y', '10Y', '20Y', '30Y'];
             
-            const labels = [];
-            const values = [];
-            
-            maturityOrder.forEach(mat => {
-                if (currentData.yield_curve[mat] !== null) {
-                    labels.push(mat);
-                    values.push(currentData.yield_curve[mat]);
-                }
-            });
+            // Build dataset as {x, y} points for scatter chart
+            const dataPoints = maturityOrder.map(mat => {
+                const yValue = currentData.yield_curve[mat];
+                return yValue !== null ? { x: xPositions[mat], y: yValue, label: mat } : null;
+            }).filter(p => p !== null);
             
             charts.currentYield = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: labels,
                     datasets: [{
                         label: 'Yield (%)',
-                        data: values,
+                        data: dataPoints,
                         borderColor: '#1d9bf0',
                         backgroundColor: 'rgba(29, 155, 240, 0.1)',
                         borderWidth: 3,
                         fill: true,
                         tension: 0.4,
                         pointRadius: 6,
-                        pointBackgroundColor: '#1d9bf0'
+                        pointBackgroundColor: '#1d9bf0',
+                        parsing: {
+                            xAxisKey: 'x',
+                            yAxisKey: 'y'
+                        }
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { display: false }
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title: (items) => items[0].raw.label,
+                                label: (item) => item.parsed.y.toFixed(2) + '%'
+                            }
+                        }
                     },
                     scales: {
+                        x: {
+                            type: 'linear',
+                            min: xPositions['1M'] - 0.5,
+                            max: xPositions['30Y'] + 1,
+                            ticks: {
+                                callback: function(value) {
+                                    // Show maturity labels at their X positions
+                                    const mat = maturityOrder.find(m => Math.abs(xPositions[m] - value) < 0.01);
+                                    return mat || '';
+                                },
+                                stepSize: 1,
+                                autoSkip: false
+                            },
+                            grid: {
+                                display: true
+                            }
+                        },
                         y: {
                             ticks: {
                                 callback: value => value.toFixed(1) + '%'
@@ -550,46 +597,17 @@
             renderSpreadIndicator('currentSpreadIndicator', currentData.spread_10y_2y);
         }
         
-        function renderCurrentEconomicIndicators() {
-            const container = document.getElementById('currentEconomicMetrics');
-            const indicators = [
-                { key: 'unemployment', label: 'Unemployment', suffix: '%' },
-                { key: 'cpi_yoy', label: 'CPI (YoY)', suffix: '%' },
-                { key: 'fed_funds', label: 'Fed Funds Rate', suffix: '%' }
-            ];
-            
-            let html = '';
-            indicators.forEach(ind => {
-                const info = currentData.economic[ind.key];
-                if (info && info.value !== null) {
-                    html += `
-                        <div class="metric">
-                            <div class="metric-label">${ind.label}</div>
-                            <div class="metric-value">${info.value.toFixed(2)}${ind.suffix}</div>
-                            <div class="metric-change neutral">as of ${info.date}</div>
-                        </div>
-                    `;
-                }
-            });
-            container.innerHTML = html;
-        }
-        
         function renderHistoricalYieldCurve(index) {
             const data = historicalData.yield_curves_monthly[index];
             document.getElementById('historicalDate').textContent = data.date;
             
             const ctx = document.getElementById('historicalYieldChart').getContext('2d');
-            const maturityOrder = ['1M', '3M', '6M', '1Y', '2Y', '3Y', '5Y', '7Y', '10Y', '20Y', '30Y'];
             
-            const labels = [];
-            const values = [];
-            
-            maturityOrder.forEach(mat => {
-                if (data.curve[mat] !== undefined) {
-                    labels.push(mat);
-                    values.push(data.curve[mat]);
-                }
-            });
+            // Build dataset as {x, y} points - include nulls for missing data
+            const dataPoints = maturityOrder.map(mat => {
+                const yValue = data.curve[mat];
+                return yValue !== undefined ? { x: xPositions[mat], y: yValue, label: mat } : null;
+            }).filter(p => p !== null);
             
             if (charts.historicalYield) {
                 charts.historicalYield.destroy();
@@ -600,29 +618,55 @@
             charts.historicalYield = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: labels,
                     datasets: [{
                         label: 'Yield (%)',
-                        data: values,
+                        data: dataPoints,
                         borderColor: isInverted ? '#f4212e' : '#1d9bf0',
                         backgroundColor: isInverted ? 'rgba(244, 33, 46, 0.1)' : 'rgba(29, 155, 240, 0.1)',
                         borderWidth: 3,
                         fill: true,
                         tension: 0.4,
                         pointRadius: 6,
-                        pointBackgroundColor: isInverted ? '#f4212e' : '#1d9bf0'
+                        pointBackgroundColor: isInverted ? '#f4212e' : '#1d9bf0',
+                        parsing: {
+                            xAxisKey: 'x',
+                            yAxisKey: 'y'
+                        }
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     animation: {
-                        duration: 0  // Disable bounce-from-zero animation
+                        duration: 0  // Disable bounce animation
                     },
                     plugins: {
-                        legend: { display: false }
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title: (items) => items[0].raw.label,
+                                label: (item) => item.parsed.y.toFixed(2) + '%'
+                            }
+                        }
                     },
                     scales: {
+                        x: {
+                            type: 'linear',
+                            min: xPositions['1M'] - 0.5,
+                            max: xPositions['30Y'] + 1,
+                            ticks: {
+                                callback: function(value) {
+                                    // Show ALL maturity labels (fixed axis)
+                                    const mat = maturityOrder.find(m => Math.abs(xPositions[m] - value) < 0.01);
+                                    return mat || '';
+                                },
+                                stepSize: 1,
+                                autoSkip: false
+                            },
+                            grid: {
+                                display: true
+                            }
+                        },
                         y: {
                             ticks: {
                                 callback: value => value.toFixed(1) + '%'
