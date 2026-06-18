@@ -352,6 +352,16 @@
     color: #4fc3f7;
 }
 
+        .date-filter-btn {
+            transition: all 0.2s;
+        }
+        
+        .date-filter-btn.active {
+            background: linear-gradient(135deg, #1d9bf0 0%, #00ba7c 100%);
+            color: white;
+            border-color: #1d9bf0;
+        }
+        
     </style>
 </head>
 <body>
@@ -523,9 +533,23 @@
             
             <!-- TAB 3: Economic Trends -->
             <div class="tab-content" data-tab="trends">
+                <div class="card" style="background: rgba(29, 155, 240, 0.05); border: 1px solid rgba(29, 155, 240, 0.2);">
+                    <h2>📊 Economic Trends</h2>
+                    <p style="color: #999; margin-bottom: 15px;">Historical data with synchronized time range control</p>
+                    
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
+                        <span style="color: #999; align-self: center; font-weight: 500;">Time Range:</span>
+                        <button class="btn btn-secondary date-filter-btn active" data-range="all" onclick="applyDateFilter('all')">All Time</button>
+                        <button class="btn btn-secondary date-filter-btn" data-range="20y" onclick="applyDateFilter('20y')">20 Years</button>
+                        <button class="btn btn-secondary date-filter-btn" data-range="10y" onclick="applyDateFilter('10y')">10 Years</button>
+                        <button class="btn btn-secondary date-filter-btn" data-range="5y" onclick="applyDateFilter('5y')">5 Years</button>
+                        <button class="btn btn-secondary date-filter-btn" data-range="1y" onclick="applyDateFilter('1y')">1 Year</button>
+                        <button class="btn btn-secondary date-filter-btn" data-range="ytd" onclick="applyDateFilter('ytd')">YTD</button>
+                    </div>
+                </div>
+                
                 <div class="card">
                     <h2>📈 10Y-2Y Spread Over Time</h2>
-                    <h3>Yield curve inversions predict recessions</h3>
                     <div class="chart-container">
                         <canvas id="spreadTrendChart"></canvas>
                     </div>
@@ -568,6 +592,15 @@
         // Global data store
         let currentData = null;
         let historicalData = null;
+        // Date filter state
+        let currentDateFilter = 'all';
+        let filteredData = {
+            spreads: [],
+            unemployment: [],
+            fed_funds: [],
+            cpi: []
+        };
+
         let charts = {};
         let isPlaying = false;
         
@@ -906,16 +939,79 @@
             `;
         }
         
+
+        function applyDateFilter(range) {
+            currentDateFilter = range;
+            
+            // Update button states
+            document.querySelectorAll('.date-filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-range="${range}"]`).classList.add('active');
+            
+            // Calculate cutoff date
+            const today = new Date();
+            let cutoffDate;
+            
+            switch(range) {
+                case 'ytd':
+                    cutoffDate = new Date(today.getFullYear(), 0, 1); // Jan 1 of current year
+                    break;
+                case '1y':
+                    cutoffDate = new Date(today);
+                    cutoffDate.setFullYear(today.getFullYear() - 1);
+                    break;
+                case '5y':
+                    cutoffDate = new Date(today);
+                    cutoffDate.setFullYear(today.getFullYear() - 5);
+                    break;
+                case '10y':
+                    cutoffDate = new Date(today);
+                    cutoffDate.setFullYear(today.getFullYear() - 10);
+                    break;
+                case '20y':
+                    cutoffDate = new Date(today);
+                    cutoffDate.setFullYear(today.getFullYear() - 20);
+                    break;
+                case 'all':
+                default:
+                    cutoffDate = new Date('1960-01-01');
+                    break;
+            }
+            
+            const cutoffStr = cutoffDate.toISOString().split('T')[0];
+            
+            // Filter all datasets
+            filteredData.spreads = historicalData.spreads_all.filter(d => d.date >= cutoffStr);
+            filteredData.unemployment = historicalData.economic_indicators.unemployment.filter(d => d.date >= cutoffStr);
+            filteredData.fed_funds = historicalData.economic_indicators.fed_funds.filter(d => d.date >= cutoffStr);
+            filteredData.cpi = historicalData.economic_indicators.cpi_yoy.filter(d => d.date >= cutoffStr);
+            
+            // Re-render all charts
+            renderSpreadTrend();
+            renderUnemploymentTrend();
+            renderFedFundsTrend();
+            renderInflationTrend();
+        }
+
         function renderSpreadTrend() {
             const ctx = document.getElementById('spreadTrendChart').getContext('2d');
+            
+            // Use filtered data if available, otherwise use full dataset
+            const dataSource = filteredData.spreads.length > 0 ? filteredData : {
+                spreads: historicalData.spreads_all,
+                unemployment: historicalData.economic_indicators.unemployment,
+                fed_funds: historicalData.economic_indicators.fed_funds,
+                cpi: historicalData.economic_indicators.cpi_yoy
+            };
             
             charts.spreadTrend = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: historicalData.spreads_all.map(d => d.date),
+                    labels: dataSource.spreads.map(d => d.date),
                     datasets: [{
                         label: '10Y-2Y Spread (%)',
-                        data: historicalData.spreads_all.map(d => d.spread),
+                        data: dataSource.spreads.map(d => d.spread),
                         borderColor: '#1d9bf0',
                         backgroundColor: 'rgba(29, 155, 240, 0.1)',
                         borderWidth: 2,
@@ -1074,13 +1170,15 @@
         function renderInflationTrend() {
             const ctx = document.getElementById('inflationChart').getContext('2d');
             
+            const dataSource = filteredData.cpi.length > 0 ? filteredData.cpi : historicalData.economic_indicators.cpi_yoy;
+            
             charts.inflationTrend = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: historicalData.economic_indicators.cpi_yoy.map(d => d.date),
+                    labels: dataSource.map(d => d.date),
                     datasets: [{
                         label: 'CPI YoY (%)',
-                        data: historicalData.economic_indicators.cpi_yoy.map(d => d.value),
+                        data: dataSource.map(d => d.value),
                         borderColor: '#f4212e',
                         backgroundColor: 'rgba(244, 33, 46, 0.1)',
                         borderWidth: 2,
