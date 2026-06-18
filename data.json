@@ -1,0 +1,53 @@
+{
+  "last_updated": "2026-06-18T00:07:33.272352+00:00",
+  "yield_curve": {
+    "1M": 3.67,
+    "3M": 3.79,
+    "6M": 3.81,
+    "1Y": 3.84,
+    "2Y": 4.05,
+    "3Y": 4.08,
+    "5Y": 4.16,
+    "7Y": 4.28,
+    "10Y": 4.43,
+    "20Y": 4.92,
+    "30Y": 4.93
+  },
+  "spread_10y_2y": 0.38,
+  "economic": {
+    "unemployment": {
+      "value": 4.3,
+      "date": "2026-05-01"
+    },
+    "cpi_yoy": {
+      "value": 0.646416993742063,
+      "date": "2024-03-01"
+    },
+    "fed_funds": {
+      "value": 3.63,
+      "date": "2026-05-01"
+    }
+  },
+  "market": {
+    "SPY": {
+      "name": "S&P 500",
+      "price": 740.96,
+      "change_pct": -1.25
+    },
+    "QQQ": {
+      "name": "Nasdaq 100",
+      "price": 722.51,
+      "change_pct": -1.01
+    },
+    "DIA": {
+      "name": "Dow Jones",
+      "price": 516.3,
+      "change_pct": -0.99
+    },
+    "^VIX": {
+      "name": "VIX",
+      "price": 18.44,
+      "change_pct": 12.37
+    }
+  }
+}
