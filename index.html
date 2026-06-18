@@ -511,13 +511,27 @@
             return map[mat];
         }
         
-        // Custom X-axis positioning (logarithmic-ish for professional look)
-        // Mix 90% linear + 10% log for subtle but noticeable spacing
+        // Custom X-axis positioning with better legibility
+        // Ensures short end (1M-6M) has breathing room while stretching long end
         function getXPosition(mat) {
             const years = maturityToYears(mat);
-            const linear = years;
-            const log = Math.log(years + 1) * 8;
-            return linear * 0.9 + log * 0.1;
+            
+            // Piecewise spacing for visual balance:
+            // - Short maturities (< 1Y): More generous spacing
+            // - Medium (1Y-5Y): Moderate
+            // - Long (>5Y): Stretched out
+            
+            if (years < 1) {
+                // Short end: boost spacing significantly
+                // Map 1M-6M across ~0-4 units (good separation)
+                return years * 6;  // 1M=0.5, 3M=1.5, 6M=3.0
+            } else if (years <= 5) {
+                // Medium: base at 4 (where 1Y starts), then add scaled years
+                return 4 + (years - 1) * 1.8;  // 1Y=4, 2Y=5.8, 3Y=7.6, 5Y=11.2
+            } else {
+                // Long end: base at ~11, then stretch with log
+                return 11 + Math.log(years - 4) * 4;  // 7Y=15.4, 10Y=18.2, 20Y=23.5, 30Y=26.9
+            }
         }
         
         // Get all X positions for fixed axis
