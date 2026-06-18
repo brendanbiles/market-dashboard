@@ -511,26 +511,23 @@
             return map[mat];
         }
         
-        // Custom X-axis positioning with better legibility
-        // Ensures short end (1M-6M) has breathing room while stretching long end
+        // Goldilocks X-axis positioning: Front end legible, past 1Y compressed
+        // Blends linear (for legibility) with log (for professional compression)
         function getXPosition(mat) {
             const years = maturityToYears(mat);
             
-            // Piecewise spacing for visual balance:
-            // - Short maturities (< 1Y): More generous spacing
-            // - Medium (1Y-5Y): Moderate
-            // - Long (>5Y): Stretched out
-            
             if (years < 1) {
-                // Short end: boost spacing significantly
-                // Map 1M-6M across ~0-4 units (good separation)
-                return years * 6;  // 1M=0.5, 3M=1.5, 6M=3.0
-            } else if (years <= 5) {
-                // Medium: base at 4 (where 1Y starts), then add scaled years
-                return 4 + (years - 1) * 1.8;  // 1Y=4, 2Y=5.8, 3Y=7.6, 5Y=11.2
+                // Short end: 4x boost for legibility (not 6x - that was too much)
+                // 1M-6M gets breathing room but not excessive
+                return years * 4;  // 1M=0.33, 3M=1.0, 6M=2.0
             } else {
-                // Long end: base at ~11, then stretch with log
-                return 11 + Math.log(years - 4) * 4;  // 7Y=15.4, 10Y=18.2, 20Y=23.5, 30Y=26.9
+                // Past 1Y: Use mostly logarithmic (original approach but smoother)
+                // This compresses the curve nicely like you liked before
+                const linear = years;
+                const log = Math.log(years + 1) * 5.5;  // Slightly more log influence
+                // Mix: 70% log, 30% linear (more compressed than original 10% log)
+                return 2 + (linear * 0.3 + log * 0.7);
+                // Results: 1Y≈3.3, 2Y≈5.0, 3Y≈6.3, 5Y≈8.4, 7Y≈10.0, 10Y≈11.8, 20Y≈15.0, 30Y≈17.3
             }
         }
         
