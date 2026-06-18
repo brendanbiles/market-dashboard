@@ -922,7 +922,24 @@
                     },
                     scales: {
                         x: {
-                            display: false
+                            ticks: {
+                                maxRotation: 0,
+                                autoSkip: true,
+                                maxTicksLimit: 12,
+                                callback: function(value, index, values) {
+                                    // Show only some year labels for legibility
+                                    const date = this.getLabelForValue(value);
+                                    if (!date) return '';
+                                    const year = date.split('-')[0];
+                                    // Show every ~5 years depending on total range
+                                    const totalLabels = values.length;
+                                    const skipFactor = Math.ceil(totalLabels / 12);
+                                    return index % skipFactor === 0 ? year : '';
+                                }
+                            },
+                            grid: {
+                                display: false
+                            }
                         },
                         y: {
                             ticks: {
@@ -960,7 +977,24 @@
                     },
                     scales: {
                         x: {
-                            display: false
+                            ticks: {
+                                maxRotation: 0,
+                                autoSkip: true,
+                                maxTicksLimit: 12,
+                                callback: function(value, index, values) {
+                                    // Show only some year labels for legibility
+                                    const date = this.getLabelForValue(value);
+                                    if (!date) return '';
+                                    const year = date.split('-')[0];
+                                    // Show every ~5 years depending on total range
+                                    const totalLabels = values.length;
+                                    const skipFactor = Math.ceil(totalLabels / 12);
+                                    return index % skipFactor === 0 ? year : '';
+                                }
+                            },
+                            grid: {
+                                display: false
+                            }
                         },
                         y: {
                             ticks: {
@@ -998,7 +1032,24 @@
                     },
                     scales: {
                         x: {
-                            display: false
+                            ticks: {
+                                maxRotation: 0,
+                                autoSkip: true,
+                                maxTicksLimit: 12,
+                                callback: function(value, index, values) {
+                                    // Show only some year labels for legibility
+                                    const date = this.getLabelForValue(value);
+                                    if (!date) return '';
+                                    const year = date.split('-')[0];
+                                    // Show every ~5 years depending on total range
+                                    const totalLabels = values.length;
+                                    const skipFactor = Math.ceil(totalLabels / 12);
+                                    return index % skipFactor === 0 ? year : '';
+                                }
+                            },
+                            grid: {
+                                display: false
+                            }
                         },
                         y: {
                             ticks: {
