@@ -38,7 +38,6 @@ Thumbs.db
 .env
 .env.local
 
-# Large generated files (regenerate via scripts)
+# Large generated files (DuckDB only - keep JSON for GitHub Pages)
 *.duckdb
 *.duckdb.wal
-historical_data.json
