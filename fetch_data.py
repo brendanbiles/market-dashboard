@@ -12,7 +12,7 @@ import requests
 
 
 # Configuration
-FRED_API_KEY = os.getenv("FRED_API_KEY", "8528856aa881487c4b4bdb8c0d141fc4")
+FRED_API_KEY = os.getenv("FRED_API_KEY")
 FRED_BASE_URL = "https://api.stlouisfed.org/fred/series/observations"
 
 # Treasury maturities for yield curve (FRED series IDs)
