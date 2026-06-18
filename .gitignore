@@ -37,3 +37,8 @@ Thumbs.db
 # Local development
 .env
 .env.local
+
+# Large generated files (regenerate via scripts)
+*.duckdb
+*.duckdb.wal
+historical_data.json

@@ -35,15 +35,36 @@ jobs:
         run: |
           pip install -r requirements.txt
       
-      - name: Fetch market data
+      - name: Check if historical data exists
+        id: check_historical
+        run: |
+          if [ ! -f "yield_curve_history.duckdb" ]; then
+            echo "need_backfill=true" >> $GITHUB_OUTPUT
+          else
+            echo "need_backfill=false" >> $GITHUB_OUTPUT
+          fi
+        shell: bash
+      
+      - name: Backfill historical data (first run only)
+        if: steps.check_historical.outputs.need_backfill == 'true'
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+        run: |
+          python backfill_historical_data.py
+      
+      - name: Fetch current market data
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
         run: |
           python fetch_data.py
       
+      - name: Export historical data to JSON
+        run: |
+          python export_historical_json.py
+      
       - name: Commit and push if data changed
         run: |
           git config user.name "Market Data Bot"
           git config user.email "brendanbiles@gmail.com"
-          git add data.json
+          git add data.json historical_data.json *.duckdb *.parquet
           git diff --quiet && git diff --staged --quiet || (git commit -m "Update market data - $(date -u +"%Y-%m-%d %H:%M UTC")" && git push)

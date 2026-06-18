@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Market Dashboard</title>
+    <title>Market Dashboard - Economic Time Machine</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         * {
@@ -36,7 +36,16 @@
             font-size: 2.5em;
             font-weight: 700;
             margin-bottom: 10px;
-            color: #1d9bf0;
+            background: linear-gradient(135deg, #1d9bf0 0%, #00ba7c 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .tagline {
+            color: #71767b;
+            font-size: 1.1em;
+            margin-bottom: 15px;
         }
         
         .last-updated {
@@ -44,11 +53,42 @@
             font-size: 0.9em;
         }
         
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
+        /* Tab Navigation */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #2f3336;
+        }
+        
+        .tab {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            color: #71767b;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .tab:hover {
+            color: #e7e9ea;
+            background: rgba(29, 155, 240, 0.1);
+        }
+        
+        .tab.active {
+            color: #1d9bf0;
+            border-bottom-color: #1d9bf0;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
         }
         
         .card {
@@ -56,6 +96,7 @@
             border: 1px solid #2f3336;
             border-radius: 16px;
             padding: 24px;
+            margin-bottom: 20px;
             transition: border-color 0.2s;
         }
         
@@ -63,15 +104,18 @@
             border-color: #1d9bf0;
         }
         
-        .card.hero {
-            grid-column: 1 / -1;
-        }
-        
         .card h2 {
             font-size: 1.3em;
             margin-bottom: 16px;
             color: #e7e9ea;
             font-weight: 600;
+        }
+        
+        .card h3 {
+            font-size: 1.1em;
+            margin-bottom: 12px;
+            color: #71767b;
+            font-weight: 500;
         }
         
         .metric-grid {
@@ -122,6 +166,10 @@
             margin-top: 20px;
         }
         
+        .chart-container.large {
+            height: 500px;
+        }
+        
         .spread-indicator {
             display: inline-block;
             padding: 8px 16px;
@@ -141,6 +189,89 @@
             background: rgba(244, 33, 46, 0.1);
             color: #f4212e;
             border: 1px solid #f4212e;
+        }
+        
+        /* Slider Controls */
+        .slider-control {
+            margin: 20px 0;
+            padding: 20px;
+            background: #0f1419;
+            border-radius: 12px;
+            border: 1px solid #2f3336;
+        }
+        
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            color: #71767b;
+            font-size: 0.9em;
+        }
+        
+        .date-display {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #1d9bf0;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #2f3336;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #1d9bf0;
+            cursor: pointer;
+            border: 3px solid #0f1419;
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #1d9bf0;
+            cursor: pointer;
+            border: 3px solid #0f1419;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            background: #1d9bf0;
+            color: #fff;
+            border: none;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 0.9em;
+        }
+        
+        .btn:hover {
+            background: #1a8cd8;
+        }
+        
+        .btn-secondary {
+            background: #2f3336;
+        }
+        
+        .btn-secondary:hover {
+            background: #3a3f44;
         }
         
         .loading {
@@ -165,16 +296,16 @@
         }
         
         @media (max-width: 768px) {
-            .grid {
-                grid-template-columns: 1fr;
-            }
-            
             h1 {
                 font-size: 1.8em;
             }
             
             .chart-container {
                 height: 300px;
+            }
+            
+            .tabs {
+                overflow-x: auto;
             }
         }
         
@@ -200,87 +331,191 @@
 <body>
     <div class="container">
         <header>
-            <h1>📊 Market Dashboard</h1>
+            <h1>📊 Economic Time Machine</h1>
+            <div class="tagline">64 years of Treasury yields & economic indicators</div>
             <div class="last-updated" id="lastUpdated">Loading...</div>
         </header>
         
+        <!-- Tab Navigation -->
+        <div class="tabs">
+            <button class="tab active" data-tab="current">Current View</button>
+            <button class="tab" data-tab="history">Yield Curve History</button>
+            <button class="tab" data-tab="trends">Economic Trends</button>
+        </div>
+        
         <div id="loading" class="loading">
             <div class="spinner"></div>
-            <p>Loading market data...</p>
+            <p>Loading historical data...</p>
         </div>
         
         <div id="content" style="display: none;">
-            <!-- Yield Curve (Hero) -->
-            <div class="card hero">
-                <h2>🏦 Treasury Yield Curve</h2>
-                <div class="chart-container">
-                    <canvas id="yieldCurveChart"></canvas>
+            <!-- TAB 1: Current View -->
+            <div class="tab-content active" data-tab="current">
+                <div class="card">
+                    <h2>🏦 Treasury Yield Curve (Today)</h2>
+                    <div class="chart-container">
+                        <canvas id="currentYieldChart"></canvas>
+                    </div>
+                    <div id="currentSpreadIndicator"></div>
                 </div>
-                <div id="spreadIndicator"></div>
+                
+                <div class="card">
+                    <h2>📊 Economic Indicators (Latest)</h2>
+                    <div class="metric-grid" id="currentEconomicMetrics"></div>
+                </div>
             </div>
             
-            <!-- Economic Indicators (Full Width) -->
-            <div class="card">
-                <h2>📊 Economic Indicators</h2>
-                <div class="metric-grid" id="economicMetrics"></div>
+            <!-- TAB 2: Yield Curve History -->
+            <div class="tab-content" data-tab="history">
+                <div class="card">
+                    <h2>🏦 Yield Curve Time Machine</h2>
+                    <h3>Scrub through 64 years of Treasury yield curves</h3>
+                    
+                    <div class="slider-control">
+                        <div class="slider-label">
+                            <span>1962</span>
+                            <span class="date-display" id="historicalDate">Loading...</span>
+                            <span>2026</span>
+                        </div>
+                        <input type="range" id="dateSlider" min="0" max="773" value="773" step="1">
+                        
+                        <div class="button-group">
+                            <button class="btn btn-secondary" onclick="jumpToDate('2008-09-15')">2008 Crisis</button>
+                            <button class="btn btn-secondary" onclick="jumpToDate('2020-03-23')">COVID-19</button>
+                            <button class="btn btn-secondary" onclick="jumpToDate('2022-11-01')">2022 Rates</button>
+                            <button class="btn" onclick="playTimeLapse()">▶ Play Time-Lapse</button>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container large">
+                        <canvas id="historicalYieldChart"></canvas>
+                    </div>
+                    <div id="historicalSpreadIndicator"></div>
+                </div>
+            </div>
+            
+            <!-- TAB 3: Economic Trends -->
+            <div class="tab-content" data-tab="trends">
+                <div class="card">
+                    <h2>📈 10Y-2Y Spread Over Time</h2>
+                    <h3>Yield curve inversions predict recessions</h3>
+                    <div class="chart-container">
+                        <canvas id="spreadTrendChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2>📊 Unemployment Rate</h2>
+                    <div class="chart-container">
+                        <canvas id="unemploymentChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2>💰 Fed Funds Rate</h2>
+                    <div class="chart-container">
+                        <canvas id="fedFundsChart"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
         
         <footer>
-            <p>Data sources: <a href="https://fred.stlouisfed.org/" target="_blank">FRED</a> & Yahoo Finance</p>
-            <p>Auto-refreshes every 60 seconds • Built by <a href="https://github.com/brendanbiles" target="_blank">@brendanbiles</a></p>
+            <p>Data sources: <a href="https://fred.stlouisfed.org/" target="_blank">FRED</a> (Federal Reserve Economic Data)</p>
+            <p>64 years • 146,486 yield observations • 2,049 days of inversions</p>
+            <p>Built by <a href="https://github.com/brendanbiles" target="_blank">@brendanbiles</a></p>
         </footer>
     </div>
 
     <script>
-        let yieldCurveChart = null;
+        // Global data store
+        let currentData = null;
+        let historicalData = null;
+        let charts = {};
+        let isPlaying = false;
         
-        // Chart.js default config
+        // Chart.js defaults
         Chart.defaults.color = '#71767b';
         Chart.defaults.borderColor = '#2f3336';
         Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
         
-        function formatDate(isoString) {
-            const date = new Date(isoString);
-            return date.toLocaleString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-                hour: 'numeric',
-                minute: '2-digit',
-                timeZoneName: 'short'
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabName = tab.dataset.tab;
+                
+                // Update active tab
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                // Show corresponding content
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                document.querySelector(`.tab-content[data-tab="${tabName}"]`).classList.add('active');
+            });
+        });
+        
+        // Load data
+        async function loadData() {
+            try {
+                const [current, historical] = await Promise.all([
+                    fetch('data.json?' + new Date().getTime()).then(r => r.json()),
+                    fetch('historical_data.json?' + new Date().getTime()).then(r => r.json())
+                ]);
+                
+                currentData = current;
+                historicalData = historical;
+                
+                document.getElementById('lastUpdated').textContent = 
+                    'Last updated: ' + new Date(current.last_updated).toLocaleString();
+                
+                initializeDashboard();
+                
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+                
+            } catch (error) {
+                console.error('Error loading data:', error);
+                document.getElementById('loading').innerHTML = 
+                    '<p style="color: #f4212e;">Error loading data. Retrying...</p>';
+                setTimeout(loadData, 3000);
+            }
+        }
+        
+        function initializeDashboard() {
+            renderCurrentYieldCurve();
+            renderCurrentEconomicIndicators();
+            renderHistoricalYieldCurve(historicalData.yield_curves_monthly.length - 1);
+            renderSpreadTrend();
+            renderUnemploymentTrend();
+            renderFedFundsTrend();
+            
+            // Setup slider
+            const slider = document.getElementById('dateSlider');
+            slider.max = historicalData.yield_curves_monthly.length - 1;
+            slider.value = slider.max;
+            
+            slider.addEventListener('input', (e) => {
+                renderHistoricalYieldCurve(parseInt(e.target.value));
             });
         }
         
-        function formatCurrency(value) {
-            return new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: 'USD',
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            }).format(value);
-        }
-        
-        function createYieldCurveChart(data) {
-            const ctx = document.getElementById('yieldCurveChart').getContext('2d');
-            
-            // Convert maturity labels to months for proper ordering
+        function renderCurrentYieldCurve() {
+            const ctx = document.getElementById('currentYieldChart').getContext('2d');
             const maturityOrder = ['1M', '3M', '6M', '1Y', '2Y', '3Y', '5Y', '7Y', '10Y', '20Y', '30Y'];
+            
             const labels = [];
             const values = [];
             
-            maturityOrder.forEach(maturity => {
-                if (data.yield_curve[maturity] !== null) {
-                    labels.push(maturity);
-                    values.push(data.yield_curve[maturity]);
+            maturityOrder.forEach(mat => {
+                if (currentData.yield_curve[mat] !== null) {
+                    labels.push(mat);
+                    values.push(currentData.yield_curve[mat]);
                 }
             });
             
-            if (yieldCurveChart) {
-                yieldCurveChart.destroy();
-            }
-            
-            yieldCurveChart = new Chart(ctx, {
+            charts.currentYield = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
@@ -293,60 +528,112 @@
                         fill: true,
                         tension: 0.4,
                         pointRadius: 6,
-                        pointHoverRadius: 8,
-                        pointBackgroundColor: '#1d9bf0',
-                        pointBorderColor: '#0f1419',
-                        pointBorderWidth: 2
+                        pointBackgroundColor: '#1d9bf0'
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            backgroundColor: '#16181c',
-                            borderColor: '#2f3336',
-                            borderWidth: 1,
-                            padding: 12,
-                            titleColor: '#e7e9ea',
-                            bodyColor: '#e7e9ea',
-                            callbacks: {
-                                label: function(context) {
-                                    return 'Yield: ' + context.parsed.y.toFixed(2) + '%';
-                                }
-                            }
-                        }
+                        legend: { display: false }
                     },
                     scales: {
-                        x: {
-                            grid: {
-                                color: '#2f3336'
-                            },
-                            ticks: {
-                                color: '#71767b'
-                            }
-                        },
                         y: {
-                            grid: {
-                                color: '#2f3336'
-                            },
                             ticks: {
-                                color: '#71767b',
-                                callback: function(value) {
-                                    return value.toFixed(1) + '%';
-                                }
+                                callback: value => value.toFixed(1) + '%'
                             }
                         }
                     }
                 }
             });
+            
+            renderSpreadIndicator('currentSpreadIndicator', currentData.spread_10y_2y);
         }
         
-        function renderSpreadIndicator(spread) {
-            const container = document.getElementById('spreadIndicator');
+        function renderCurrentEconomicIndicators() {
+            const container = document.getElementById('currentEconomicMetrics');
+            const indicators = [
+                { key: 'unemployment', label: 'Unemployment', suffix: '%' },
+                { key: 'cpi_yoy', label: 'CPI (YoY)', suffix: '%' },
+                { key: 'fed_funds', label: 'Fed Funds Rate', suffix: '%' }
+            ];
+            
+            let html = '';
+            indicators.forEach(ind => {
+                const info = currentData.economic[ind.key];
+                if (info && info.value !== null) {
+                    html += `
+                        <div class="metric">
+                            <div class="metric-label">${ind.label}</div>
+                            <div class="metric-value">${info.value.toFixed(2)}${ind.suffix}</div>
+                            <div class="metric-change neutral">as of ${info.date}</div>
+                        </div>
+                    `;
+                }
+            });
+            container.innerHTML = html;
+        }
+        
+        function renderHistoricalYieldCurve(index) {
+            const data = historicalData.yield_curves_monthly[index];
+            document.getElementById('historicalDate').textContent = data.date;
+            
+            const ctx = document.getElementById('historicalYieldChart').getContext('2d');
+            const maturityOrder = ['1M', '3M', '6M', '1Y', '2Y', '3Y', '5Y', '7Y', '10Y', '20Y', '30Y'];
+            
+            const labels = [];
+            const values = [];
+            
+            maturityOrder.forEach(mat => {
+                if (data.curve[mat] !== undefined) {
+                    labels.push(mat);
+                    values.push(data.curve[mat]);
+                }
+            });
+            
+            if (charts.historicalYield) {
+                charts.historicalYield.destroy();
+            }
+            
+            const isInverted = data.spread && data.spread < 0;
+            
+            charts.historicalYield = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Yield (%)',
+                        data: values,
+                        borderColor: isInverted ? '#f4212e' : '#1d9bf0',
+                        backgroundColor: isInverted ? 'rgba(244, 33, 46, 0.1)' : 'rgba(29, 155, 240, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 6,
+                        pointBackgroundColor: isInverted ? '#f4212e' : '#1d9bf0'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            ticks: {
+                                callback: value => value.toFixed(1) + '%'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            renderSpreadIndicator('historicalSpreadIndicator', data.spread);
+        }
+        
+        function renderSpreadIndicator(elementId, spread) {
+            const container = document.getElementById(elementId);
             if (spread === null) {
                 container.innerHTML = '';
                 return;
@@ -364,59 +651,156 @@
             `;
         }
         
-
-        function renderEconomicMetrics(data) {
-            const container = document.getElementById('economicMetrics');
-            let html = '';
+        function renderSpreadTrend() {
+            const ctx = document.getElementById('spreadTrendChart').getContext('2d');
             
-            const indicators = [
-                { key: 'unemployment', label: 'Unemployment', suffix: '%' },
-                { key: 'cpi_yoy', label: 'CPI (YoY)', suffix: '%' },
-                { key: 'fed_funds', label: 'Fed Funds Rate', suffix: '%' }
-            ];
-            
-            indicators.forEach(indicator => {
-                const info = data.economic[indicator.key];
-                if (info && info.value !== null) {
-                    html += `
-                        <div class="metric">
-                            <div class="metric-label">${indicator.label}</div>
-                            <div class="metric-value">${info.value.toFixed(2)}${indicator.suffix}</div>
-                            <div class="metric-change neutral">as of ${info.date}</div>
-                        </div>
-                    `;
+            charts.spreadTrend = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: historicalData.spreads_all.map(d => d.date),
+                    datasets: [{
+                        label: '10Y-2Y Spread (%)',
+                        data: historicalData.spreads_all.map(d => d.spread),
+                        borderColor: '#1d9bf0',
+                        backgroundColor: 'rgba(29, 155, 240, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.1,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            display: false
+                        },
+                        y: {
+                            ticks: {
+                                callback: value => value.toFixed(1) + '%'
+                            }
+                        }
+                    }
                 }
             });
-            
-            container.innerHTML = html;
         }
         
-        function updateDashboard() {
-            fetch('data.json?' + new Date().getTime()) // Cache bust
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('lastUpdated').textContent = 
-                        'Last updated: ' + formatDate(data.last_updated);
-                    
-                    createYieldCurveChart(data);
-                    renderSpreadIndicator(data.spread_10y_2y);
-                    renderEconomicMetrics(data);
-                    
-                    document.getElementById('loading').style.display = 'none';
-                    document.getElementById('content').style.display = 'block';
-                })
-                .catch(error => {
-                    console.error('Error loading data:', error);
-                    document.getElementById('loading').innerHTML = 
-                        '<p style="color: #f4212e;">Error loading data. Retrying...</p>';
-                });
+        function renderUnemploymentTrend() {
+            const ctx = document.getElementById('unemploymentChart').getContext('2d');
+            
+            charts.unemployment = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: historicalData.economic_indicators.unemployment.map(d => d.date),
+                    datasets: [{
+                        label: 'Unemployment Rate (%)',
+                        data: historicalData.economic_indicators.unemployment.map(d => d.value),
+                        borderColor: '#00ba7c',
+                        backgroundColor: 'rgba(0, 186, 124, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.1,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            display: false
+                        },
+                        y: {
+                            ticks: {
+                                callback: value => value.toFixed(1) + '%'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function renderFedFundsTrend() {
+            const ctx = document.getElementById('fedFundsChart').getContext('2d');
+            
+            charts.fedFunds = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: historicalData.economic_indicators.fed_funds.map(d => d.date),
+                    datasets: [{
+                        label: 'Fed Funds Rate (%)',
+                        data: historicalData.economic_indicators.fed_funds.map(d => d.value),
+                        borderColor: '#f4212e',
+                        backgroundColor: 'rgba(244, 33, 46, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.1,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            display: false
+                        },
+                        y: {
+                            ticks: {
+                                callback: value => value.toFixed(1) + '%'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function jumpToDate(targetDate) {
+            const index = historicalData.yield_curves_monthly.findIndex(d => d.date === targetDate);
+            if (index >= 0) {
+                document.getElementById('dateSlider').value = index;
+                renderHistoricalYieldCurve(index);
+            }
+        }
+        
+        function playTimeLapse() {
+            if (isPlaying) return;
+            
+            isPlaying = true;
+            const btn = event.target;
+            btn.textContent = '⏸ Pause';
+            btn.disabled = true;
+            
+            const slider = document.getElementById('dateSlider');
+            let currentIndex = 0;
+            
+            const interval = setInterval(() => {
+                if (currentIndex >= historicalData.yield_curves_monthly.length - 1) {
+                    clearInterval(interval);
+                    isPlaying = false;
+                    btn.textContent = '▶ Play Time-Lapse';
+                    btn.disabled = false;
+                    return;
+                }
+                
+                currentIndex += 3; // Skip every 3 months for speed
+                slider.value = currentIndex;
+                renderHistoricalYieldCurve(currentIndex);
+            }, 100);
         }
         
         // Initial load
-        updateDashboard();
-        
-        // Auto-refresh every 60 seconds
-        setInterval(updateDashboard, 60000);
+        loadData();
     </script>
 </body>
 </html>
