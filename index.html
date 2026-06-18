@@ -429,6 +429,7 @@
                             <button class="btn btn-secondary" onclick="jumpToDate('2008-09-15')">2008 Crisis</button>
                             <button class="btn btn-secondary" onclick="jumpToDate('2020-03-23')">COVID-19</button>
                             <button class="btn btn-secondary" onclick="jumpToDate('2022-11-01')">2022 Rates</button>
+                            <button class="btn btn-secondary" onclick="jumpToToday()">Today</button>
                             <button class="btn" onclick="playTimeLapse()">Play Time-Lapse</button>
                         </div>
                     </div>
@@ -1276,6 +1277,12 @@
             renderHistoricalYieldCurve(closestIndex);
         }
         
+        function jumpToToday() {
+            const lastIndex = historicalData.yield_curves_monthly.length - 1;
+            document.getElementById('dateSlider').value = lastIndex;
+            renderHistoricalYieldCurve(lastIndex);
+        }
+
         function playTimeLapse() {
             if (isPlaying) return;
             
