@@ -595,7 +595,7 @@
         
         <footer>
             <p>Data sources: <a href="https://fred.stlouisfed.org/" target="_blank">FRED</a> (Federal Reserve Economic Data)</p>
-            <p>64 years • 146,486 yield observations • 2,049 days of inversions</p>
+            <p>64 years ï¿½ 146,486 yield observations ï¿½ 2,049 days of inversions</p>
             <p>Built by <a href="https://github.com/brendanbiles" target="_blank">@brendanbiles</a></p>
         </footer>
     </div>
@@ -710,7 +710,7 @@
                 const log = Math.log(years + 1) * 5.5;  // Slightly more log influence
                 // Mix: 70% log, 30% linear (more compressed than original 10% log)
                 return 2 + (linear * 0.3 + log * 0.7);
-                // Results: 1Y˜3.3, 2Y˜5.0, 3Y˜6.3, 5Y˜8.4, 7Y˜10.0, 10Y˜11.8, 20Y˜15.0, 30Y˜17.3
+                // Results: 1Yï¿½3.3, 2Yï¿½5.0, 3Yï¿½6.3, 5Yï¿½8.4, 7Yï¿½10.0, 10Yï¿½11.8, 20Yï¿½15.0, 30Yï¿½17.3
             }
         }
         
@@ -840,34 +840,43 @@
         function renderHistoricalYieldCurve(index) {
             const data = historicalData.yield_curves_monthly[index];
             document.getElementById('historicalDate').textContent = data.date;
-            
-            const ctx = document.getElementById('historicalYieldChart').getContext('2d');
-            
+
+            const isInverted = data.spread && data.spread < 0;
+            const color = isInverted ? '#f4212e' : '#f97316';
+            const bgColor = isInverted ? 'rgba(244, 33, 46, 0.1)' : 'rgba(249, 115, 22, 0.1)';
+
             // Build dataset as {x, y} points - include nulls for missing data
             const dataPoints = maturityOrder.map(mat => {
                 const yValue = data.curve[mat];
                 return yValue !== undefined ? { x: xPositions[mat], y: yValue, label: mat } : null;
             }).filter(p => p !== null);
-            
+
             if (charts.historicalYield) {
-                charts.historicalYield.destroy();
+                const ds = charts.historicalYield.data.datasets[0];
+                ds.data = dataPoints;
+                ds.borderColor = color;
+                ds.backgroundColor = bgColor;
+                ds.pointBackgroundColor = color;
+                charts.historicalYield.update('none');
+                renderSpreadIndicator('historicalSpreadIndicator', data.spread);
+                return;
             }
-            
-            const isInverted = data.spread && data.spread < 0;
-            
+
+            const ctx = document.getElementById('historicalYieldChart').getContext('2d');
+
             charts.historicalYield = new Chart(ctx, {
                 type: 'line',
                 data: {
                     datasets: [{
                         label: 'Yield (%)',
                         data: dataPoints,
-                        borderColor: isInverted ? '#f4212e' : '#f97316',
-                        backgroundColor: isInverted ? 'rgba(244, 33, 46, 0.1)' : 'rgba(249, 115, 22, 0.1)',
+                        borderColor: color,
+                        backgroundColor: bgColor,
                         borderWidth: 3,
                         fill: true,
                         tension: 0.4,
                         pointRadius: 6,
-                        pointBackgroundColor: isInverted ? '#f4212e' : '#f97316',
+                        pointBackgroundColor: color,
                         parsing: {
                             xAxisKey: 'x',
                             yAxisKey: 'y'
@@ -1253,11 +1262,18 @@
 
 
         function jumpToDate(targetDate) {
-            const index = historicalData.yield_curves_monthly.findIndex(d => d.date === targetDate);
-            if (index >= 0) {
-                document.getElementById('dateSlider').value = index;
-                renderHistoricalYieldCurve(index);
-            }
+            const target = new Date(targetDate).getTime();
+            let closestIndex = 0;
+            let closestDiff = Infinity;
+            historicalData.yield_curves_monthly.forEach((d, i) => {
+                const diff = Math.abs(new Date(d.date).getTime() - target);
+                if (diff < closestDiff) {
+                    closestDiff = diff;
+                    closestIndex = i;
+                }
+            });
+            document.getElementById('dateSlider').value = closestIndex;
+            renderHistoricalYieldCurve(closestIndex);
         }
         
         function playTimeLapse() {
