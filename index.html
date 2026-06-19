@@ -398,16 +398,16 @@
             <!-- TAB 1: Current View -->
             <div class="tab-content active" data-tab="current">
                 <div class="card">
+                    <h2>Economic Indicators</h2>
+                    <div class="metric-grid" id="currentEconomicMetrics"></div>
+                </div>
+
+                <div class="card">
                     <h2>Treasury Yield Curve</h2>
                     <div class="chart-container">
                         <canvas id="currentYieldChart"></canvas>
                     </div>
                     <div id="currentSpreadIndicator"></div>
-                </div>
-                
-                <div class="card">
-                    <h2>Economic Indicators</h2>
-                    <div class="metric-grid" id="currentEconomicMetrics"></div>
                 </div>
             </div>
             
@@ -835,6 +835,20 @@
                     `;
                 }
             });
+
+            if (currentData.spread_10y_2y !== null && currentData.spread_10y_2y !== undefined) {
+                const spread = currentData.spread_10y_2y;
+                const isInverted = spread < 0;
+                const spreadColor = isInverted ? '#f4212e' : '#ec4899';
+                html += `
+                    <div class="metric">
+                        <div class="metric-label">2-10 Spread</div>
+                        <div class="metric-value" style="color: ${spreadColor}">${spread >= 0 ? '+' : ''}${spread.toFixed(2)}%</div>
+                        <div class="metric-change neutral">${isInverted ? 'INVERTED' : 'normal'}</div>
+                    </div>
+                `;
+            }
+
             container.innerHTML = html;
         }
 
