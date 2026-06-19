@@ -132,26 +132,40 @@
         }
         
         .metric-label {
-            font-size: 0.85em;
+            font-size: 1em;
             color: #a39d96;
             margin-bottom: 8px;
         }
-        
+
         .metric-value {
             font-size: 1.8em;
             font-weight: 700;
             color: #faf8f6;
+            text-align: center;
         }
-        
+
         .metric-change {
             font-size: 0.9em;
             margin-top: 4px;
+            text-align: center;
         }
 
-        .metric-range {
-            font-size: 0.78em;
+        .metric-ranges {
+            width: 100%;
+            margin-top: 10px;
+            border-collapse: collapse;
+            font-size: 0.75em;
             color: #a39d96;
-            margin-top: 5px;
+        }
+
+        .metric-ranges td {
+            padding: 2px 0;
+            vertical-align: middle;
+        }
+
+        .metric-ranges td:last-child {
+            text-align: right;
+            white-space: nowrap;
         }
         
         .positive {
@@ -832,15 +846,31 @@
             return { min, max, pct: Math.max(0, Math.min(100, pct)) };
         }
 
-        function rangeHtml(stats, suffix, label) {
-            if (!stats) return '';
-            return `<div class="metric-range">${label}: ${stats.min.toFixed(2)}${suffix}–${stats.max.toFixed(2)}${suffix} · ${stats.pct}th pct</div>`;
+        function ordinal(n) {
+            const s = ['th', 'st', 'nd', 'rd'];
+            const v = n % 100;
+            return n + (s[(v - 20) % 10] || s[v] || s[0]);
+        }
+
+        function formatDate(dateStr) {
+            const [y, m, d] = dateStr.split('-').map(Number);
+            const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            return `${months[m - 1]} ${d}, ${y}`;
+        }
+
+        function rangesTable(ranges) {
+            const rows = ranges.map(({ label, stats, suffix }) => {
+                if (!stats) return '';
+                const range = `${stats.min.toFixed(2)}${suffix}–${stats.max.toFixed(2)}${suffix}`;
+                return `<tr><td>${label}: ${range}</td><td>${ordinal(stats.pct)} percentile</td></tr>`;
+            }).join('');
+            return rows ? `<table class="metric-ranges">${rows}</table>` : '';
         }
 
         function renderCurrentEconomicIndicators() {
             const container = document.getElementById('currentEconomicMetrics');
             const indicators = [
-                { key: 'unemployment', label: 'Unemployment', suffix: '%', histKey: 'unemployment' },
+                { key: 'unemployment', label: 'Unemployment',   suffix: '%', histKey: 'unemployment' },
                 { key: 'cpi_yoy',      label: 'CPI (YoY)',      suffix: '%', histKey: 'cpi_yoy' },
                 { key: 'fed_funds',    label: 'Fed Funds Rate', suffix: '%', histKey: 'fed_funds' }
             ];
@@ -850,15 +880,21 @@
                 const info = currentData.economic[ind.key];
                 if (info && info.value !== null) {
                     const histArr = historicalData?.economic_indicators?.[ind.histKey] || [];
-                    const stats52w = getRangeStats(histArr, 'value', info.value, 1);
-                    const stats10y = getRangeStats(histArr, 'value', info.value, 10);
+                    const s = ind.suffix;
+                    const v = info.value;
+                    const table = rangesTable([
+                        { label: '52W range',  stats: getRangeStats(histArr, 'value', v,  1), suffix: s },
+                        { label: '2Y range',   stats: getRangeStats(histArr, 'value', v,  2), suffix: s },
+                        { label: '5Y range',   stats: getRangeStats(histArr, 'value', v,  5), suffix: s },
+                        { label: '10Y range',  stats: getRangeStats(histArr, 'value', v, 10), suffix: s },
+                        { label: '50Y range',  stats: getRangeStats(histArr, 'value', v, 50), suffix: s },
+                    ]);
                     html += `
                         <div class="metric">
                             <div class="metric-label">${ind.label}</div>
-                            <div class="metric-value">${info.value.toFixed(2)}${ind.suffix}</div>
-                            <div class="metric-change neutral">as of ${info.date}</div>
-                            ${rangeHtml(stats52w, ind.suffix, '52W')}
-                            ${rangeHtml(stats10y, ind.suffix, '10Y')}
+                            <div class="metric-value">${v.toFixed(2)}${s}</div>
+                            <div class="metric-change neutral">as of ${formatDate(info.date)}</div>
+                            ${table}
                         </div>
                     `;
                 }
@@ -868,15 +904,19 @@
                 const spread = currentData.spread_10y_2y;
                 const isInverted = spread < 0;
                 const spreadArr = historicalData?.spreads_all || [];
-                const stats52w = getRangeStats(spreadArr, 'spread', spread, 1);
-                const stats10y = getRangeStats(spreadArr, 'spread', spread, 10);
+                const table = rangesTable([
+                    { label: '52W range',  stats: getRangeStats(spreadArr, 'spread', spread,  1), suffix: '%' },
+                    { label: '2Y range',   stats: getRangeStats(spreadArr, 'spread', spread,  2), suffix: '%' },
+                    { label: '5Y range',   stats: getRangeStats(spreadArr, 'spread', spread,  5), suffix: '%' },
+                    { label: '10Y range',  stats: getRangeStats(spreadArr, 'spread', spread, 10), suffix: '%' },
+                    { label: '50Y range',  stats: getRangeStats(spreadArr, 'spread', spread, 50), suffix: '%' },
+                ]);
                 html += `
                     <div class="metric">
                         <div class="metric-label">2-10 Spread</div>
                         <div class="metric-value">${spread >= 0 ? '+' : ''}${spread.toFixed(2)}%</div>
                         <div class="metric-change ${isInverted ? 'negative' : 'neutral'}">${isInverted ? 'INVERTED' : 'normal'}</div>
-                        ${rangeHtml(stats52w, '%', '52W')}
-                        ${rangeHtml(stats10y, '%', '10Y')}
+                        ${table}
                     </div>
                 `;
             }
