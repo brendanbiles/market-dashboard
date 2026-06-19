@@ -820,9 +820,9 @@
         }
         
         
-        function get52WeekStats(dataArr, valueKey, currentValue) {
+        function getRangeStats(dataArr, valueKey, currentValue, years) {
             const cutoff = new Date();
-            cutoff.setFullYear(cutoff.getFullYear() - 1);
+            cutoff.setFullYear(cutoff.getFullYear() - years);
             const cutoffStr = cutoff.toISOString().split('T')[0];
             const vals = dataArr.filter(d => d.date >= cutoffStr).map(d => d[valueKey]);
             if (!vals.length) return null;
@@ -832,9 +832,9 @@
             return { min, max, pct: Math.max(0, Math.min(100, pct)) };
         }
 
-        function rangeHtml(stats, suffix) {
+        function rangeHtml(stats, suffix, label) {
             if (!stats) return '';
-            return `<div class="metric-range">52W: ${stats.min.toFixed(2)}${suffix}–${stats.max.toFixed(2)}${suffix} · ${stats.pct}th pct</div>`;
+            return `<div class="metric-range">${label}: ${stats.min.toFixed(2)}${suffix}–${stats.max.toFixed(2)}${suffix} · ${stats.pct}th pct</div>`;
         }
 
         function renderCurrentEconomicIndicators() {
@@ -850,13 +850,15 @@
                 const info = currentData.economic[ind.key];
                 if (info && info.value !== null) {
                     const histArr = historicalData?.economic_indicators?.[ind.histKey] || [];
-                    const stats = get52WeekStats(histArr, 'value', info.value);
+                    const stats52w = getRangeStats(histArr, 'value', info.value, 1);
+                    const stats10y = getRangeStats(histArr, 'value', info.value, 10);
                     html += `
                         <div class="metric">
                             <div class="metric-label">${ind.label}</div>
                             <div class="metric-value">${info.value.toFixed(2)}${ind.suffix}</div>
                             <div class="metric-change neutral">as of ${info.date}</div>
-                            ${rangeHtml(stats, ind.suffix)}
+                            ${rangeHtml(stats52w, ind.suffix, '52W')}
+                            ${rangeHtml(stats10y, ind.suffix, '10Y')}
                         </div>
                     `;
                 }
@@ -866,13 +868,15 @@
                 const spread = currentData.spread_10y_2y;
                 const isInverted = spread < 0;
                 const spreadArr = historicalData?.spreads_all || [];
-                const stats = get52WeekStats(spreadArr, 'spread', spread);
+                const stats52w = getRangeStats(spreadArr, 'spread', spread, 1);
+                const stats10y = getRangeStats(spreadArr, 'spread', spread, 10);
                 html += `
                     <div class="metric">
                         <div class="metric-label">2-10 Spread</div>
                         <div class="metric-value">${spread >= 0 ? '+' : ''}${spread.toFixed(2)}%</div>
                         <div class="metric-change ${isInverted ? 'negative' : 'neutral'}">${isInverted ? 'INVERTED' : 'normal'}</div>
-                        ${rangeHtml(stats, '%')}
+                        ${rangeHtml(stats52w, '%', '52W')}
+                        ${rangeHtml(stats10y, '%', '10Y')}
                     </div>
                 `;
             }
