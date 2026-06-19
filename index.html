@@ -147,6 +147,12 @@
             font-size: 0.9em;
             margin-top: 4px;
         }
+
+        .metric-range {
+            font-size: 0.78em;
+            color: #a39d96;
+            margin-top: 5px;
+        }
         
         .positive {
             color: #ec4899;
@@ -814,23 +820,43 @@
         }
         
         
+        function get52WeekStats(dataArr, valueKey, currentValue) {
+            const cutoff = new Date();
+            cutoff.setFullYear(cutoff.getFullYear() - 1);
+            const cutoffStr = cutoff.toISOString().split('T')[0];
+            const vals = dataArr.filter(d => d.date >= cutoffStr).map(d => d[valueKey]);
+            if (!vals.length) return null;
+            const min = Math.min(...vals);
+            const max = Math.max(...vals);
+            const pct = max === min ? 50 : Math.round(((currentValue - min) / (max - min)) * 100);
+            return { min, max, pct: Math.max(0, Math.min(100, pct)) };
+        }
+
+        function rangeHtml(stats, suffix) {
+            if (!stats) return '';
+            return `<div class="metric-range">52W: ${stats.min.toFixed(2)}${suffix}–${stats.max.toFixed(2)}${suffix} · ${stats.pct}th pct</div>`;
+        }
+
         function renderCurrentEconomicIndicators() {
             const container = document.getElementById('currentEconomicMetrics');
             const indicators = [
-                { key: 'unemployment', label: 'Unemployment', suffix: '%' },
-                { key: 'cpi_yoy', label: 'CPI (YoY)', suffix: '%' },
-                { key: 'fed_funds', label: 'Fed Funds Rate', suffix: '%' }
+                { key: 'unemployment', label: 'Unemployment', suffix: '%', histKey: 'unemployment' },
+                { key: 'cpi_yoy',      label: 'CPI (YoY)',      suffix: '%', histKey: 'cpi_yoy' },
+                { key: 'fed_funds',    label: 'Fed Funds Rate', suffix: '%', histKey: 'fed_funds' }
             ];
-            
+
             let html = '';
             indicators.forEach(ind => {
                 const info = currentData.economic[ind.key];
                 if (info && info.value !== null) {
+                    const histArr = historicalData?.economic_indicators?.[ind.histKey] || [];
+                    const stats = get52WeekStats(histArr, 'value', info.value);
                     html += `
                         <div class="metric">
                             <div class="metric-label">${ind.label}</div>
                             <div class="metric-value">${info.value.toFixed(2)}${ind.suffix}</div>
                             <div class="metric-change neutral">as of ${info.date}</div>
+                            ${rangeHtml(stats, ind.suffix)}
                         </div>
                     `;
                 }
@@ -839,12 +865,14 @@
             if (currentData.spread_10y_2y !== null && currentData.spread_10y_2y !== undefined) {
                 const spread = currentData.spread_10y_2y;
                 const isInverted = spread < 0;
-                const spreadColor = isInverted ? '#f4212e' : '#ec4899';
+                const spreadArr = historicalData?.spreads_all || [];
+                const stats = get52WeekStats(spreadArr, 'spread', spread);
                 html += `
                     <div class="metric">
                         <div class="metric-label">2-10 Spread</div>
-                        <div class="metric-value" style="color: ${spreadColor}">${spread >= 0 ? '+' : ''}${spread.toFixed(2)}%</div>
-                        <div class="metric-change neutral">${isInverted ? 'INVERTED' : 'normal'}</div>
+                        <div class="metric-value">${spread >= 0 ? '+' : ''}${spread.toFixed(2)}%</div>
+                        <div class="metric-change ${isInverted ? 'negative' : 'neutral'}">${isInverted ? 'INVERTED' : 'normal'}</div>
+                        ${rangeHtml(stats, '%')}
                     </div>
                 `;
             }
