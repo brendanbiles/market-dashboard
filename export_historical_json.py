@@ -126,7 +126,7 @@ def export_economic_indicators():
     cpi = conn.execute("""
         SELECT date, value
         FROM indicators
-        WHERE series_id = 'CPALTT01USM657N'
+        WHERE series_id = 'CPIAUCSL'
         ORDER BY date
     """).fetchall()
     

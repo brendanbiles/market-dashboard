@@ -30,11 +30,11 @@ TREASURY_SERIES = {
     "30Y": "DGS30",
 }
 
-# Other economic indicators
+# Other economic indicators — units=pc1 fetches YoY % change from FRED
 ECONOMIC_SERIES = {
-    "unemployment": "UNRATE",
-    "cpi_yoy": "CPALTT01USM657N",  # CPI YoY % change
-    "fed_funds": "FEDFUNDS",
+    "unemployment": {"id": "UNRATE"},
+    "cpi_yoy":      {"id": "CPIAUCSL", "units": "pc1"},
+    "fed_funds":    {"id": "FEDFUNDS"},
 }
 
 # Market tickers - REMOVED: Too easy to find on Google
@@ -42,7 +42,7 @@ ECONOMIC_SERIES = {
 MARKET_TICKERS = {}
 
 
-def fetch_fred_series(series_id: str, limit: int = 1) -> Dict[str, Any]:
+def fetch_fred_series(series_id: str, limit: int = 1, units: str = None) -> Dict[str, Any]:
     """Fetch the most recent observation from a FRED series."""
     params = {
         "series_id": series_id,
@@ -51,6 +51,8 @@ def fetch_fred_series(series_id: str, limit: int = 1) -> Dict[str, Any]:
         "sort_order": "desc",
         "limit": limit,
     }
+    if units:
+        params["units"] = units
     
     response = requests.get(FRED_BASE_URL, params=params)
     response.raise_for_status()
@@ -80,13 +82,13 @@ def fetch_yield_curve() -> Dict[str, Any]:
 def fetch_economic_indicators() -> Dict[str, Any]:
     """Fetch key economic indicators."""
     indicators = {}
-    for name, series_id in ECONOMIC_SERIES.items():
-        data = fetch_fred_series(series_id)
+    for name, cfg in ECONOMIC_SERIES.items():
+        data = fetch_fred_series(cfg["id"], units=cfg.get("units"))
         indicators[name] = {
             "value": data["value"],
             "date": data["date"],
         }
-    
+
     return indicators
 
 

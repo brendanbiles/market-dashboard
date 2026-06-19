@@ -34,11 +34,11 @@ TREASURY_SERIES = {
     "30Y": "DGS30",
 }
 
-# Economic indicators
+# Economic indicators — units=pc1 fetches YoY % change from FRED
 ECONOMIC_SERIES = {
-    "unemployment": "UNRATE",
-    "cpi_yoy": "CPALTT01USM657N",
-    "fed_funds": "FEDFUNDS",
+    "unemployment": {"id": "UNRATE"},
+    "cpi_yoy":      {"id": "CPIAUCSL", "units": "pc1"},
+    "fed_funds":    {"id": "FEDFUNDS"},
 }
 
 # Database files
@@ -47,12 +47,13 @@ ECONOMIC_DB = "economic_indicators.duckdb"
 
 
 def fetch_fred_series_history(
-    series_id: str, 
-    start_date: str = "1960-01-01"
+    series_id: str,
+    start_date: str = "1960-01-01",
+    units: str = None,
 ) -> List[Tuple[str, float]]:
     """
     Fetch all historical observations for a FRED series.
-    
+
     Returns:
         List of (date, value) tuples
     """
@@ -64,6 +65,8 @@ def fetch_fred_series_history(
         "sort_order": "asc",
         "limit": 100000,  # Max allowed by FRED
     }
+    if units:
+        params["units"] = units
     
     print(f"  Fetching {series_id}...", end=" ")
     
@@ -183,12 +186,13 @@ def backfill_economic_indicators():
     
     total_records = 0
     
-    for name, series_id in ECONOMIC_SERIES.items():
-        history = fetch_fred_series_history(series_id)
-        
+    for name, cfg in ECONOMIC_SERIES.items():
+        series_id = cfg["id"]
+        history = fetch_fred_series_history(series_id, units=cfg.get("units"))
+
         if not history:
             continue
-        
+
         # Insert all records
         for date, value in history:
             conn.execute(
@@ -270,9 +274,10 @@ def print_summary():
     # Economic indicators
     conn = duckdb.connect(ECONOMIC_DB)
     
-    for name, series_id in ECONOMIC_SERIES.items():
+    for name, cfg in ECONOMIC_SERIES.items():
+        series_id = cfg["id"]
         stats = conn.execute("""
-            SELECT 
+            SELECT
                 MIN(date) as earliest,
                 MAX(date) as latest,
                 COUNT(*) as records
