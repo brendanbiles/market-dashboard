@@ -21,7 +21,7 @@
         }
         
         .container {
-            max-width: 1400px;
+            max-width: 1600px;
             margin: 0 auto;
         }
         
@@ -120,7 +120,7 @@
         
         .metric-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
             gap: 16px;
         }
         
@@ -899,6 +899,29 @@
                     `;
                 }
             });
+
+            const tenYearYield = currentData.yield_curve?.['10Y'];
+            if (tenYearYield !== null && tenYearYield !== undefined) {
+                const tenYearArr = (historicalData?.yield_curves_monthly || [])
+                    .filter(d => d.curve['10Y'] !== null && d.curve['10Y'] !== undefined)
+                    .map(d => ({ date: d.date, value: d.curve['10Y'] }));
+                const asOfDate = currentData.last_updated.split('T')[0];
+                const table = rangesTable([
+                    { label: '52W range',  stats: getRangeStats(tenYearArr, 'value', tenYearYield,  1), suffix: '%' },
+                    { label: '2Y range',   stats: getRangeStats(tenYearArr, 'value', tenYearYield,  2), suffix: '%' },
+                    { label: '5Y range',   stats: getRangeStats(tenYearArr, 'value', tenYearYield,  5), suffix: '%' },
+                    { label: '10Y range',  stats: getRangeStats(tenYearArr, 'value', tenYearYield, 10), suffix: '%' },
+                    { label: '50Y range',  stats: getRangeStats(tenYearArr, 'value', tenYearYield, 50), suffix: '%' },
+                ]);
+                html += `
+                    <div class="metric">
+                        <div class="metric-label">10Y Treasury Yield</div>
+                        <div class="metric-value">${tenYearYield.toFixed(2)}%</div>
+                        <div class="metric-change neutral">as of ${formatDate(asOfDate)}</div>
+                        ${table}
+                    </div>
+                `;
+            }
 
             if (currentData.spread_10y_2y !== null && currentData.spread_10y_2y !== undefined) {
                 const spread = currentData.spread_10y_2y;
