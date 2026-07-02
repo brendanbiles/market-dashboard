@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-07-02T12:11:59.689092+00:00",
+  "last_updated": "2026-07-02T15:07:09.289397+00:00",
   "yield_curve": {
     "1M": 3.7,
     "3M": 3.87,
@@ -16,8 +16,8 @@
   "spread_10y_2y": 0.3,
   "economic": {
     "unemployment": {
-      "value": 4.3,
-      "date": "2026-05-01"
+      "value": 4.2,
+      "date": "2026-06-01"
     },
     "cpi_yoy": {
       "value": 4.16661,
