@@ -140,29 +140,31 @@ def backfill_treasury_yields():
     conn = duckdb.connect(YIELD_DB)
     
     total_records = 0
-    
+
+    # Clear existing data before full re-fetch
+    conn.execute("DELETE FROM yields")
+    conn.execute("DELETE FROM spreads")
+
     for maturity, series_id in TREASURY_SERIES.items():
         history = fetch_fred_series_history(series_id)
-        
+
         if not history:
             continue
-        
-        # Insert all records (use INSERT OR REPLACE to handle duplicates)
-        for date, yield_value in history:
-            conn.execute(
-                "INSERT OR REPLACE INTO yields (date, maturity, yield) VALUES (?, ?, ?)",
-                (date, maturity, yield_value)
-            )
-        
+
+        conn.executemany(
+            "INSERT INTO yields (date, maturity, yield) VALUES (?, ?, ?)",
+            [(date, maturity, yield_value) for date, yield_value in history]
+        )
+
         total_records += len(history)
-    
+
     conn.commit()
-    
+
     # Calculate and store historical 10Y-2Y spreads
     print("\n  Computing 10Y-2Y spreads...")
     conn.execute("""
-        INSERT OR REPLACE INTO spreads (date, spread_10y_2y)
-        SELECT 
+        INSERT INTO spreads (date, spread_10y_2y)
+        SELECT
             y10.date,
             ROUND(y10.yield - y2.yield, 2) as spread_10y_2y
         FROM yields y10
@@ -185,7 +187,10 @@ def backfill_economic_indicators():
     conn = duckdb.connect(ECONOMIC_DB)
     
     total_records = 0
-    
+
+    # Clear existing data before full re-fetch
+    conn.execute("DELETE FROM indicators")
+
     for name, cfg in ECONOMIC_SERIES.items():
         series_id = cfg["id"]
         history = fetch_fred_series_history(series_id, units=cfg.get("units"))
@@ -193,13 +198,11 @@ def backfill_economic_indicators():
         if not history:
             continue
 
-        # Insert all records
-        for date, value in history:
-            conn.execute(
-                "INSERT OR REPLACE INTO indicators (date, series_id, series_name, value) VALUES (?, ?, ?, ?)",
-                (date, series_id, name, value)
-            )
-        
+        conn.executemany(
+            "INSERT INTO indicators (date, series_id, series_name, value) VALUES (?, ?, ?, ?)",
+            [(date, series_id, name, value) for date, value in history]
+        )
+
         total_records += len(history)
     
     conn.commit()
