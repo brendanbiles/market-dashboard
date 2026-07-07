@@ -38,6 +38,7 @@ Thumbs.db
 .env
 .env.local
 
-# Large generated files (DuckDB only - keep JSON for GitHub Pages)
+# Large generated files (keep JSON for GitHub Pages, exclude binary artifacts)
 *.duckdb
 *.duckdb.wal
+*.parquet
