@@ -1,47 +1,47 @@
-# 📊 Market Dashboard
+# Market Dashboard
 
-A clean, auto-updating dashboard displaying key financial and economic indicators. Built to democratize access to important market data for personal and small investors.
+A clean, auto-updating dashboard displaying key financial and economic indicators built around hard-to-visualize FRED data.
 
-**Live Dashboard:** [Coming soon - GitHub Pages URL]
+**Live Dashboard:** https://brendanbiles.github.io/market-dashboard/
 
 ## Features
 
-- **Treasury Yield Curve** - Real-time visualization of all Treasury maturities (1M to 30Y)
+- **Treasury Yield Curve** - Real-time visualization of all Treasury maturities (1M to 30Y) with a goldilocks log/linear hybrid X-axis
 - **10Y-2Y Spread** - Recession indicator with inverted curve warnings
-- **Major Market Indices** - SPY, QQQ, DIA with daily changes
-- **VIX (Fear Gauge)** - Market volatility indicator
-- **Economic Indicators** - Unemployment, CPI, Fed Funds Rate
+- **Economic Indicators** - Unemployment, CPI YoY, Fed Funds Rate — each with 52W/2Y/5Y/10Y/50Y range tables and percentile context
+- **64-Year Yield Curve Time Machine** - Scrub through every month of Treasury history since 1962; jump to key historical events
+- **Economic Trends** - Long-run charts for Fed Funds, CPI, Unemployment, and 2Y-10Y spread with synchronized time range control
+- **Historical Inversion Periods** - Annotated reference covering every major yield curve inversion with Austrian economics commentary
 
 ### Auto-Refresh
-- Data updates every 15 minutes during market hours
-- Client-side refresh every 60 seconds
-- Zero manual intervention required
+- `data.json` updates every 15 minutes during market hours via GitHub Actions
+- Historical data (`historical_data.json`) is updated manually by running the export pipeline locally
 
 ## Tech Stack
 
-- **Data Sources**: [FRED API](https://fred.stlouisfed.org/) (Federal Reserve Economic Data) & Yahoo Finance
+- **Data Source**: [FRED API](https://fred.stlouisfed.org/) (Federal Reserve Economic Data)
 - **Frontend**: Vanilla HTML/CSS/JavaScript with Chart.js
-- **Backend**: Python script with GitHub Actions automation
+- **Backend**: Python scripts + GitHub Actions automation
 - **Hosting**: GitHub Pages (free, fast, reliable)
 
-## Data Collection
+## Data Pipeline
 
-The `fetch_data.py` script pulls:
+### Current Data (`fetch_data.py` → `data.json`)
+Runs automatically via GitHub Actions every 15 minutes on weekdays.
 
-### Treasury Yields (FRED)
+#### Treasury Yields (FRED)
 - 11 maturities: 1M, 3M, 6M, 1Y, 2Y, 3Y, 5Y, 7Y, 10Y, 20Y, 30Y
+- Series: DGS1MO, DGS3MO, DGS6MO, DGS1, DGS2, DGS3, DGS5, DGS7, DGS10, DGS20, DGS30
 - Calculates 10Y-2Y spread automatically
 
-### Economic Indicators (FRED)
-- Unemployment Rate (UNRATE)
-- CPI Year-over-Year (CPALTT01USM657N)
-- Fed Funds Rate (FEDFUNDS)
+#### Economic Indicators (FRED)
+- Unemployment Rate (`UNRATE`)
+- CPI Year-over-Year (`CPIAUCSL`, units=pc1)
+- Fed Funds Rate (`FEDFUNDS`)
 
-### Market Data (Yahoo Finance)
-- S&P 500 (SPY)
-- Nasdaq 100 (QQQ)
-- Dow Jones (DIA)
-- VIX (^VIX)
+### Historical Data (manual pipeline)
+1. `backfill_historical_data.py` — populates local DuckDB from FRED
+2. `export_historical_json.py` — exports to `historical_data.json` for the dashboard
 
 ## Local Development
 
@@ -60,12 +60,12 @@ The `fetch_data.py` script pulls:
    ```bash
    # Windows
    set FRED_API_KEY=your_key_here
-   
+
    # Mac/Linux
    export FRED_API_KEY=your_key_here
    ```
 
-4. **Fetch data**
+4. **Fetch current data**
    ```bash
    python fetch_data.py
    ```
@@ -75,8 +75,6 @@ The `fetch_data.py` script pulls:
    - Or use a local server: `python -m http.server 8000`
 
 ## Deployment
-
-The dashboard uses GitHub Actions to automatically update data every 15 minutes and deploys to GitHub Pages.
 
 ### Setup Steps
 
@@ -92,28 +90,7 @@ The dashboard uses GitHub Actions to automatically update data every 15 minutes 
    - Branch: `main` / root
    - Save
 
-4. **Done!** GitHub Actions will:
-   - Run `fetch_data.py` every 15 minutes
-   - Commit updated `data.json`
-   - GitHub Pages serves the dashboard automatically
-
-Your dashboard will be live at: `https://brendanbiles.github.io/market-dashboard/`
-
-## Design Philosophy
-
-**Ruthlessly minimal.** This MVP focuses on:
-- ✅ The most important economic indicators
-- ✅ Beautiful, clear visualization (especially yield curve)
-- ✅ Zero friction access (no login, no paywall)
-- ✅ Auto-updates (set and forget)
-
-**Out of scope for V1:**
-- ❌ AI commentary/analysis
-- ❌ User accounts/personalization
-- ❌ Historical data/charting
-- ❌ Alerts/notifications
-
-These can be added later based on user feedback!
+4. **Done!** GitHub Actions will run `fetch_data.py` every 15 minutes and push updated `data.json` automatically.
 
 ## Cost
 
@@ -121,23 +98,10 @@ These can be added later based on user feedback!
 - GitHub Actions: 2,000 minutes/month free (this uses ~30 min/month)
 - GitHub Pages: Free for public repos
 - FRED API: Free (no rate limits for personal use)
-- Yahoo Finance: Free
 
-## Use Cases
+## Design Philosophy
 
-Perfect for:
-- 📱 Quick morning market check
-- 💬 Sharing with your network ("here's what matters today")
-- 📊 Teaching friends/family about market indicators
-- 🔗 Linking in Slack/Discord/Twitter for context
-
-## Contributing
-
-This is a personal project, but suggestions welcome! Open an issue or PR.
-
-## License
-
-MIT License - feel free to fork and customize!
+**Ruthlessly minimal.** Focused on hard-to-visualize economic data that takes effort to find elsewhere. Deliberately excludes market indices and tickers — those are too easy to find already.
 
 ## Author
 
@@ -145,4 +109,4 @@ Built by [Brendan Biles](https://github.com/brendanbiles)
 
 ---
 
-*Data provided by Federal Reserve Economic Data (FRED) and Yahoo Finance. Not investment advice.*
+*Data provided by Federal Reserve Economic Data (FRED). Not investment advice.*
