@@ -42,3 +42,7 @@ Thumbs.db
 *.duckdb
 *.duckdb.wal
 *.parquet
+
+# Tooling scratch (gstack). Not used deliberately; ignored so it stops showing
+# up as an uncommitted change on every status check.
+.gstack/
