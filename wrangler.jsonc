@@ -1,0 +1,26 @@
+{
+  // Cloudflare Workers static-assets config.
+  //
+  // Unlike personal-site and token-data, this serves the repository ROOT
+  // rather than a public/ subdirectory. That is deliberate, not an
+  // oversight: this repository is PUBLIC, so every file in it is already
+  // readable on GitHub and serving it adds no exposure. The public/ split
+  // exists to stop a private repository leaking through a public serving
+  // directory, and there is no private side here to protect.
+  //
+  // Restructuring a working, auto-refreshing deployment for a privacy gain
+  // that does not exist would be churn. See the deploy-surfaces note in
+  // DigiBrain's Atlas for the full reasoning.
+  //
+  // What matters instead for a public repository: no credentials in files.
+  // The FRED key comes from os.getenv and lives in GitHub Actions secrets.
+  //
+  // The GitHub Action commits data.json and historical_data.json on a
+  // schedule, and each push redeploys, so the site refreshes itself.
+
+  "name": "market-dashboard",
+  "compatibility_date": "2026-08-24",
+  "assets": {
+    "directory": "./"
+  }
+}

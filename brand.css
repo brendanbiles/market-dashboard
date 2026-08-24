@@ -1,0 +1,174 @@
+/* =========================================================================
+   brendanbiles.com — shared brand layer
+   ==========================================================================
+
+   CANONICAL SOURCE: personal-site/public/brand.css
+   Published at:     https://brendanbiles.com/brand.css
+
+   Every site under brendanbiles.com loads this first, then its own
+   style.css for components only. Anything defined here must NOT be
+   redefined downstream, or the two copies drift and the sites stop
+   matching. That is the whole failure this file exists to prevent.
+
+   Other projects vendor a COPY rather than linking to the published URL.
+   Linking would make every project depend on the main site being up, and
+   a project has to be able to leave without breaking. A build-time copy
+   keeps one source of truth without a runtime dependency.
+
+   To change the look of every site: edit this file, then let each project
+   pick it up on its next build.
+   ========================================================================= */
+
+/* ---------- Tokens -------------------------------------------------------- */
+/* Defined on bare :root so every value always exists. The dark block below
+   only overrides tokens; it never introduces one for the first time. */
+:root {
+  --bg:        #fbfaf8;
+  --surface:   #ffffff;
+  --border:    #e5e1da;
+  --text:      #1a1917;
+  --muted:     #6b665e;
+  --accent:    #0f5c4a;
+  --accent-sf: #e6f2ee;
+  --live:      #12805f;
+
+  --radius: 12px;
+  --shadow: 0 1px 2px rgb(0 0 0 / .04), 0 10px 28px -14px rgb(0 0 0 / .12);
+
+  /* Fluid type: scales between a floor and a ceiling, so no per-breakpoint
+     font sizes are needed anywhere. */
+  --step-0: clamp(1rem,    0.96rem + 0.20vw, 1.0625rem);
+  --step-1: clamp(1.15rem, 1.08rem + 0.35vw, 1.35rem);
+  --step-2: clamp(1.35rem, 1.25rem + 0.50vw, 1.75rem);
+  --step-3: clamp(1.75rem, 1.45rem + 1.50vw, 2.75rem);
+
+  --wrap: 56rem;
+}
+
+/* Dark palette. Applied two ways: automatically when the visitor's system
+   asks for it, and explicitly when a page sets data-theme="dark" on <html>.
+   The explicit form exists for pages that are dark by design rather than by
+   preference, such as the market dashboard. Keep the two blocks identical. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:        #14161a;
+    --surface:   #1b1e23;
+    --border:    #2b2f36;
+    --text:      #e9e7e3;
+    --muted:     #9aa0a8;
+    --accent:    #5fd0ae;
+    --accent-sf: #14332b;
+    --live:      #4ecfa6;
+    --shadow: 0 1px 2px rgb(0 0 0 / .30), 0 10px 28px -14px rgb(0 0 0 / .60);
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg:        #14161a;
+  --surface:   #1b1e23;
+  --border:    #2b2f36;
+  --text:      #e9e7e3;
+  --muted:     #9aa0a8;
+  --accent:    #5fd0ae;
+  --accent-sf: #14332b;
+  --live:      #4ecfa6;
+  --shadow: 0 1px 2px rgb(0 0 0 / .30), 0 10px 28px -14px rgb(0 0 0 / .60);
+}
+
+/* ---------- No global reset here, deliberately ----------------------------
+   This file contains ONLY custom properties and class-scoped rules. It has
+   no `*`, `body`, `a` or element selectors, so it can be dropped into a page
+   that already has its own stylesheet without disturbing it.
+
+   That constraint is what lets the market dashboard share this file. It
+   carries 388 lines of its own CSS written before any of this existed, and a
+   global reset landing on top of it would silently change its spacing.
+
+   Each site owns its own reset in its own style.css.
+   ------------------------------------------------------------------------- */
+
+/* ---------- Shared furniture ---------------------------------------------- */
+/* The pieces that must look identical on every site, so moving between them
+   reads as moving between pages rather than between websites. */
+
+.wrap { width: min(100% - 2.25rem, var(--wrap)); margin-inline: auto; }
+.wrap, .site-head, .site-nav, .site-foot, .badge, .note {
+  box-sizing: border-box;
+}
+
+main > section { padding-block: clamp(1.75rem, 1.2rem + 2.5vw, 3.5rem); }
+main > section + section { border-top: 1px solid var(--border); }
+main > section[id] { scroll-margin-top: 4.5rem; }
+
+.skip { position: absolute; left: -9999px; }
+.skip:focus {
+  left: 1rem; top: 1rem; z-index: 10;
+  background: var(--surface); padding: .6rem 1rem;
+  border-radius: 8px; box-shadow: var(--shadow);
+}
+
+/* Header: wordmark left, optional meta or nav right. Identical everywhere. */
+.site-head {
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(10px);
+}
+.site-head .wrap {
+  display: flex; flex-wrap: wrap; align-items: baseline;
+  justify-content: space-between; gap: .25rem 1.5rem;
+  padding-block: .85rem;
+}
+.wordmark { font-weight: 650; letter-spacing: -0.01em; font-size: 1.0625rem; }
+.wordmark a { color: inherit; text-decoration: none; }
+.stamp { color: var(--muted); font-size: .8125rem; }
+
+/* Cross-site nav. Present on every page so the set reads as one place. */
+.site-nav { display: flex; flex-wrap: wrap; gap: clamp(.9rem, .5rem + 1.5vw, 1.5rem); }
+.site-nav a {
+  color: var(--muted); text-decoration: none; font-size: .9375rem;
+  white-space: nowrap;
+}
+.site-nav a:hover { color: var(--text); }
+.site-nav a[aria-current="page"] { color: var(--text); font-weight: 560; }
+
+.badge {
+  display: inline-flex; align-items: center; gap: .4rem;
+  padding: .2rem .55rem; border-radius: 999px;
+  font-size: .7rem; font-weight: 650; letter-spacing: .03em;
+  text-transform: uppercase; white-space: nowrap;
+  background: var(--accent-sf); color: var(--live);
+}
+.badge-build, .badge-soon {
+  background: color-mix(in srgb, var(--muted) 15%, transparent);
+  color: var(--muted);
+}
+.dot { width: .4rem; height: .4rem; border-radius: 50%; background: currentColor; }
+@media (prefers-reduced-motion: no-preference) {
+  .badge-live .dot { animation: pulse 2.2s ease-in-out infinite; }
+}
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+
+/* A qualification attached to a claim. Used wherever a number needs its
+   limit stated beside it. */
+.note {
+  font-size: .875rem;
+  line-height: 1.55;
+  color: var(--muted);
+  border-left: 2px solid var(--border);
+  padding-left: .85rem;
+  text-wrap: pretty;
+}
+.note strong { color: var(--text); font-weight: 600; }
+
+.site-foot {
+  border-top: 1px solid var(--border);
+  padding-block: 2rem;
+  color: var(--muted);
+  font-size: .8125rem;
+}
+.site-foot .wrap {
+  display: flex; flex-wrap: wrap;
+  justify-content: space-between; gap: .4rem 1.5rem;
+}
+.site-foot p + p { margin-top: .25rem; }
+.colophon { opacity: .8; }

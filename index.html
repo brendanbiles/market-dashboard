@@ -1,9 +1,16 @@
 <!DOCTYPE html>
-<html lang="en">
+<!-- data-theme="dark" pins the shared palette to dark. This dashboard is dark
+     by design rather than by visitor preference, so it opts in explicitly. -->
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Market Dashboard - Economic Dashboard</title>
+    <!-- Shared brand layer for brendanbiles.com: design tokens plus the
+         cross-site header. It carries no global selectors, so it cannot
+         disturb the dashboard's own stylesheet below. Canonical source is
+         personal-site/public/brand.css; this is a vendored copy. -->
+    <link rel="stylesheet" href="brand.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         * {
@@ -396,6 +403,19 @@
     </style>
 </head>
 <body>
+    <!-- Cross-site header. Identical on every site under brendanbiles.com so
+         the separate deployments read as one place. -->
+    <header class="site-head">
+      <div class="wrap">
+        <p class="wordmark"><a href="https://brendanbiles.com/">Brendan&nbsp;Biles</a></p>
+        <nav class="site-nav" aria-label="Sites">
+          <a href="https://brendanbiles.com/">Home</a>
+          <a href="https://tokens.brendanbiles.com/">Tokenomics</a>
+          <a href="/" aria-current="page">Markets</a>
+        </nav>
+      </div>
+    </header>
+
     <div class="container">
         <header>
             <h1>Economic Dashboard</h1>
