@@ -1,0 +1,286 @@
+/* =========================================================================
+   market-dashboard — components only
+
+   Tokens, shared header, nav and footer furniture come from brand.css, the
+   layer every site under brendanbiles.com loads. Everything here is built
+   from those tokens, so this dashboard reads as a page of the same site
+   rather than a separate product.
+
+   Restyled 2026-08-24. The previous theme was orange on near-black with a
+   pink gradient headline. No colour is hardcoded here any more: every value
+   resolves from brand.css and follows light or dark automatically.
+   ========================================================================= */
+
+/* ---------- Reset and base ------------------------------------------------ */
+*, *::before, *::after { box-sizing: border-box; }
+* { margin: 0; padding: 0; }
+
+body {
+  font: var(--step-0)/1.6 ui-sans-serif, system-ui, -apple-system,
+        "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+a { color: var(--accent); text-underline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+
+/* Wider than the other sites on purpose: this page is a data grid with six
+   charts, and squeezing it to a reading column would waste the space. */
+.container {
+  width: min(100% - 2.25rem, 84rem);
+  margin-inline: auto;
+  padding-block: clamp(1.5rem, 1rem + 2vw, 2.5rem);
+}
+
+/* ---------- Page title ---------------------------------------------------- */
+/* The shared site header sits above this. This is the dashboard's own title. */
+header {
+  margin-bottom: 1.75rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+h1 {
+  font-size: var(--step-3);
+  font-weight: 660;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--text);
+}
+
+.tagline { color: var(--muted); font-size: var(--step-1); margin-top: .4rem; }
+.last-updated { color: var(--muted); font-size: .8125rem; margin-top: .5rem; }
+
+/* ---------- Tabs ---------------------------------------------------------- */
+.tabs {
+  display: flex;
+  gap: .25rem;
+  margin-bottom: 1.75rem;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+
+.tab {
+  padding: .7rem 1rem;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: .9375rem;
+  font-weight: 560;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color .18s ease, border-color .18s ease;
+}
+
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* ---------- Cards --------------------------------------------------------- */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  transition: border-color .18s ease;
+}
+
+.card:hover { border-color: color-mix(in srgb, var(--accent) 30%, var(--border)); }
+.card h2 { font-size: 1.125rem; font-weight: 620; letter-spacing: -0.01em; margin-bottom: .9rem; }
+.card h3 { font-size: .9375rem; font-weight: 560; color: var(--muted); margin-bottom: .75rem; }
+
+/* ---------- Metrics ------------------------------------------------------- */
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr));
+  gap: .75rem;
+}
+
+.metric {
+  background: var(--bg);
+  padding: .9rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.metric-label { font-size: .8125rem; color: var(--muted); margin-bottom: .4rem; }
+
+.metric-value {
+  font-size: var(--step-2);
+  font-weight: 660;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.metric-change { font-size: .8125rem; margin-top: .2rem; text-align: center; }
+
+.metric-ranges {
+  width: 100%;
+  margin-top: .6rem;
+  border-collapse: collapse;
+  font-size: .6875rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.metric-ranges td { padding: .1rem 0; vertical-align: middle; }
+.metric-ranges td:last-child { text-align: right; white-space: nowrap; }
+
+/* These carry meaning and are never used decoratively. The old stylesheet had
+   .positive rendering pink, which said nothing about the number. */
+.positive, .positive-value { color: var(--pos); }
+.negative, .negative-value { color: var(--neg); }
+.neutral { color: var(--muted); }
+
+/* ---------- Charts -------------------------------------------------------- */
+.chart-container { position: relative; height: clamp(17rem, 42vh, 25rem); margin-top: 1rem; }
+.chart-container.large { height: clamp(20rem, 52vh, 31rem); }
+
+/* ---------- Spread indicator ---------------------------------------------- */
+.spread-indicator {
+  display: inline-block;
+  padding: .35rem .8rem;
+  border-radius: 999px;
+  font-weight: 620;
+  font-size: .8125rem;
+  margin-top: .75rem;
+}
+
+.spread-positive {
+  background: color-mix(in srgb, var(--pos) 12%, transparent);
+  color: var(--pos);
+  border: 1px solid color-mix(in srgb, var(--pos) 40%, transparent);
+}
+
+.spread-negative {
+  background: color-mix(in srgb, var(--neg) 12%, transparent);
+  color: var(--neg);
+  border: 1px solid color-mix(in srgb, var(--neg) 40%, transparent);
+}
+
+/* ---------- Controls ------------------------------------------------------ */
+.slider-control {
+  margin: 1.25rem 0;
+  padding: 1.15rem;
+  background: var(--bg);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.slider-label {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .35rem 1rem;
+  margin-bottom: .75rem;
+  color: var(--muted);
+  font-size: .8125rem;
+}
+
+.date-display {
+  font-size: 1rem;
+  font-weight: 660;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+input[type="range"] {
+  width: 100%;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--border);
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: 3px solid var(--bg);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: 3px solid var(--bg);
+}
+
+.button-group { display: flex; gap: .5rem; margin-top: .9rem; flex-wrap: wrap; }
+
+.btn {
+  padding: .45rem .9rem;
+  background: var(--accent);
+  color: var(--bg);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font: inherit;
+  font-size: .8125rem;
+  font-weight: 560;
+  cursor: pointer;
+  transition: opacity .18s ease;
+}
+
+.btn:hover { opacity: .88; }
+
+.btn-secondary { background: transparent; color: var(--text); border-color: var(--border); }
+.btn-secondary:hover { border-color: var(--accent); opacity: 1; }
+
+.date-filter-btn { transition: all .18s ease; }
+.date-filter-btn.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+
+/* ---------- Loading ------------------------------------------------------- */
+.loading { text-align: center; padding: 3.5rem; color: var(--muted); }
+
+.spinner {
+  border: 3px solid var(--border);
+  border-top: 3px solid var(--accent);
+  border-radius: 50%;
+  width: 34px; height: 34px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1.15rem;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+
+/* ---------- Inversion notes ----------------------------------------------- */
+.inversion-period {
+  margin-bottom: 1.15rem;
+  padding: .9rem 1rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--neg);
+  border-radius: 8px;
+}
+
+.inversion-period h4 { margin-bottom: .5rem; color: var(--neg); font-size: .9375rem; font-weight: 620; }
+.inversion-period p { margin: .4rem 0; color: var(--muted); font-size: .875rem; line-height: 1.6; }
+.inversion-period strong { color: var(--text); font-weight: 600; }
+
+/* ---------- Footer -------------------------------------------------------- */
+footer {
+  margin-top: 2.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: .8125rem;
+}
+
+footer a { color: var(--accent); text-decoration: none; }
+footer a:hover { text-decoration: underline; }

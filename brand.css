@@ -35,6 +35,18 @@
   --radius: 12px;
   --shadow: 0 1px 2px rgb(0 0 0 / .04), 0 10px 28px -14px rgb(0 0 0 / .12);
 
+  /* Chart series. Ordered by how often a chart needs another line, so a
+     one-series chart gets --chart-1 and reads as the accent. Chosen to stay
+     legible on both the light and dark surfaces, and to keep no single hue
+     dominant. --pos and --neg carry meaning and are never used decoratively. */
+  --chart-1: #0f5c4a;
+  --chart-2: #2a6f97;
+  --chart-3: #a8560a;
+  --chart-4: #6a4c93;
+  --chart-5: #857f72;
+  --pos:     #12805f;
+  --neg:     #b3261e;
+
   /* Fluid type: scales between a floor and a ceiling, so no per-breakpoint
      font sizes are needed anywhere. */
   --step-0: clamp(1rem,    0.96rem + 0.20vw, 1.0625rem);
@@ -60,6 +72,14 @@
     --accent-sf: #14332b;
     --live:      #4ecfa6;
     --shadow: 0 1px 2px rgb(0 0 0 / .30), 0 10px 28px -14px rgb(0 0 0 / .60);
+
+    --chart-1: #5fd0ae;
+    --chart-2: #6cb2eb;
+    --chart-3: #e0a458;
+    --chart-4: #b39ddb;
+    --chart-5: #a8a29a;
+    --pos:     #4ecfa6;
+    --neg:     #f2836b;
   }
 }
 
@@ -73,6 +93,14 @@
   --accent-sf: #14332b;
   --live:      #4ecfa6;
   --shadow: 0 1px 2px rgb(0 0 0 / .30), 0 10px 28px -14px rgb(0 0 0 / .60);
+
+  --chart-1: #5fd0ae;
+  --chart-2: #6cb2eb;
+  --chart-3: #e0a458;
+  --chart-4: #b39ddb;
+  --chart-5: #a8a29a;
+  --pos:     #4ecfa6;
+  --neg:     #f2836b;
 }
 
 /* ---------- No global reset here, deliberately ----------------------------

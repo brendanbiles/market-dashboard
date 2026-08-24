@@ -1,406 +1,17 @@
 <!DOCTYPE html>
-<!-- data-theme="dark" pins the shared palette to dark. This dashboard is dark
-     by design rather than by visitor preference, so it opts in explicitly. -->
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Market Dashboard - Economic Dashboard</title>
-    <!-- Shared brand layer for brendanbiles.com: design tokens plus the
-         cross-site header. It carries no global selectors, so it cannot
-         disturb the dashboard's own stylesheet below. Canonical source is
+    <!-- brand.css is the shared layer every site under brendanbiles.com loads:
+         design tokens, the cross-site header, and the chart palette. It must
+         come first, because style.css and the Chart.js config below both read
+         its custom properties. Canonical source is
          personal-site/public/brand.css; this is a vendored copy. -->
     <link rel="stylesheet" href="brand.css">
+    <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: #1a1816;
-            color: #faf8f6;
-            padding: 20px;
-            line-height: 1.6;
-        }
-        
-        .container {
-            max-width: 1600px;
-            margin: 0 auto;
-        }
-        
-        header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #2f3336;
-        }
-        
-        h1 {
-            font-size: 2.5em;
-            font-weight: 700;
-            margin-bottom: 10px;
-            background: linear-gradient(135deg, #f97316 0%, #ec4899 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        .tagline {
-            color: #a39d96;
-            font-size: 1.1em;
-            margin-bottom: 15px;
-        }
-        
-        .last-updated {
-            color: #a39d96;
-            font-size: 0.9em;
-        }
-        
-        /* Tab Navigation */
-        .tabs {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 30px;
-            border-bottom: 2px solid #2f3336;
-        }
-        
-        .tab {
-            padding: 12px 24px;
-            background: transparent;
-            border: none;
-            color: #a39d96;
-            font-size: 1em;
-            font-weight: 600;
-            cursor: pointer;
-            border-bottom: 3px solid transparent;
-            transition: all 0.2s;
-        }
-        
-        .tab:hover {
-            color: #faf8f6;
-            background: rgba(249, 115, 22, 0.1);
-        }
-        
-        .tab.active {
-            color: #f97316;
-            border-bottom-color: #f97316;
-        }
-        
-        .tab-content {
-            display: none;
-        }
-        
-        .tab-content.active {
-            display: block;
-        }
-        
-        .card {
-            background: #16181c;
-            border: 1px solid #3a3531;
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 20px;
-            transition: border-color 0.2s;
-        }
-        
-        .card:hover {
-            border-color: #f97316;
-        }
-        
-        .card h2 {
-            font-size: 1.3em;
-            margin-bottom: 16px;
-            color: #faf8f6;
-            font-weight: 600;
-        }
-        
-        .card h3 {
-            font-size: 1.1em;
-            margin-bottom: 12px;
-            color: #a39d96;
-            font-weight: 500;
-        }
-        
-        .metric-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 16px;
-        }
-        
-        .metric {
-            background: #1a1816;
-            padding: 16px;
-            border-radius: 12px;
-            border: 1px solid #3a3531;
-        }
-        
-        .metric-label {
-            font-size: 1em;
-            color: #a39d96;
-            margin-bottom: 8px;
-        }
-
-        .metric-value {
-            font-size: 1.8em;
-            font-weight: 700;
-            color: #faf8f6;
-            text-align: center;
-        }
-
-        .metric-change {
-            font-size: 0.9em;
-            margin-top: 4px;
-            text-align: center;
-        }
-
-        .metric-ranges {
-            width: 100%;
-            margin-top: 10px;
-            border-collapse: collapse;
-            font-size: 0.75em;
-            color: #a39d96;
-        }
-
-        .metric-ranges td {
-            padding: 2px 0;
-            vertical-align: middle;
-        }
-
-        .metric-ranges td:last-child {
-            text-align: right;
-            white-space: nowrap;
-        }
-        
-        .positive {
-            color: #ec4899;
-        }
-        
-        .negative {
-            color: #f4212e;
-        }
-        
-        .neutral {
-            color: #a39d96;
-        }
-        
-        .chart-container {
-            position: relative;
-            height: 400px;
-            margin-top: 20px;
-        }
-        
-        .chart-container.large {
-            height: 500px;
-        }
-        
-        .spread-indicator {
-            display: inline-block;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-weight: 600;
-            font-size: 0.9em;
-            margin-top: 12px;
-        }
-        
-        .spread-positive {
-            background: rgba(0, 186, 124, 0.1);
-            color: #ec4899;
-            border: 1px solid #ec4899;
-        }
-        
-        .spread-negative {
-            background: rgba(244, 33, 46, 0.1);
-            color: #f4212e;
-            border: 1px solid #f4212e;
-        }
-        
-        /* Slider Controls */
-        .slider-control {
-            margin: 20px 0;
-            padding: 20px;
-            background: #1a1816;
-            border-radius: 12px;
-            border: 1px solid #3a3531;
-        }
-        
-        .slider-label {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 12px;
-            color: #a39d96;
-            font-size: 0.9em;
-        }
-        
-        .date-display {
-            font-size: 1.2em;
-            font-weight: 700;
-            color: #f97316;
-        }
-        
-        input[type="range"] {
-            width: 100%;
-            height: 6px;
-            border-radius: 3px;
-            background: #2f3336;
-            outline: none;
-            -webkit-appearance: none;
-        }
-        
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #f97316;
-            cursor: pointer;
-            border: 3px solid #0f1419;
-        }
-        
-        input[type="range"]::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #f97316;
-            cursor: pointer;
-            border: 3px solid #0f1419;
-        }
-        
-        .button-group {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-            flex-wrap: wrap;
-        }
-        
-        .btn {
-            padding: 8px 16px;
-            background: #f97316;
-            color: #fff;
-            border: none;
-            border-radius: 20px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s;
-            font-size: 0.9em;
-        }
-        
-        .btn:hover {
-            background: linear-gradient(135deg, #fb923c 0%, #f472b6 100%);
-        }
-        
-        .btn-secondary {
-            background: #2f3336;
-        }
-        
-        .btn-secondary:hover {
-            background: #3a3f44;
-        }
-        
-        .loading {
-            text-align: center;
-            padding: 60px;
-            color: #a39d96;
-        }
-        
-        .spinner {
-            border: 3px solid #2f3336;
-            border-top: 3px solid #f97316;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        @media (max-width: 768px) {
-            h1 {
-                font-size: 1.8em;
-            }
-            
-            .chart-container {
-                height: 300px;
-            }
-            
-            .tabs {
-                overflow-x: auto;
-            }
-        }
-        
-        footer {
-            text-align: center;
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid #2f3336;
-            color: #a39d96;
-            font-size: 0.85em;
-        }
-        
-        footer a {
-            color: #f97316;
-            text-decoration: none;
-        }
-        
-        footer a:hover {
-            text-decoration: underline;
-        }
-
-.inversion-period {
-    margin-bottom: 25px;
-    padding: 15px;
-    background: rgba(255,255,255,0.02);
-    border-left: 3px solid #ef5350;
-    border-radius: 8px;
-}
-
-.inversion-period h4 {
-    margin: 0 0 10px 0;
-    color: #ef5350;
-    font-size: 1.1em;
-}
-
-.inversion-period p {
-    margin: 8px 0;
-    color: #ccc;
-    font-size: 0.95em;
-    line-height: 1.6;
-}
-
-.inversion-period strong {
-    color: #fb923c;
-}
-
-        .date-filter-btn {
-            transition: all 0.2s;
-        }
-        
-        .date-filter-btn.active {
-            background: linear-gradient(135deg, #f97316 0%, #ec4899 100%);
-            color: white;
-            border-color: #f97316;
-        }
-        
-    
-        /* Money value colors */
-        .positive-value {
-            color: #2d6a4f; /* Forest green */
-        }
-        
-        .negative-value {
-            color: #991b1b; /* Deep rouge red */
-        }
-
-    </style>
 </head>
 <body>
     <!-- Cross-site header. Identical on every site under brendanbiles.com so
@@ -481,9 +92,9 @@
                     <div id="historicalSpreadIndicator"></div>
                 
 <!-- Inversion Period Histories -->
-<div style="margin-top: 30px; padding: 20px; background: rgba(255,255,255,0.03); border-radius: 8px;">
-    <h3 style="margin-top: 0; color: #fb923c; font-size: 1.3em;">Historical Inversion Periods</h3>
-    <p style="color: #999; margin-bottom: 25px;">Educational reference: What was happening during each yield curve inversion?</p>
+<div style="margin-top: 30px; padding: 20px; background: var(--bg); border-radius: 8px;">
+    <h3 style="margin-top: 0; color: var(--text); font-size: 1.3em;">Historical Inversion Periods</h3>
+    <p style="color: var(--muted); margin-bottom: 25px;">Educational reference: What was happening during each yield curve inversion?</p>
     
     <!-- 1978-1980: Volcker's Arrival -->
     <div class="inversion-period">
@@ -549,8 +160,8 @@
         <p><strong>Austrian Perspective:</strong> Inevitable consequence of 2020-21 monetary/fiscal explosion ($5T printed). Longest inversion since 1980s signals severe distortions from decade+ of near-zero rates (2008-2021). Zombification of corporate sector. Malinvestments everywhere (unprofitable tech, CRE overbuilding, overleveraged PE). Fed trapped: can't normalize rates without triggering crisis, but low rates fuel inflation/bubbles. Resolution likely requires significant recession to liquidate excesses.</p>
     </div>
     
-    <div style="margin-top: 25px; padding: 15px; background: rgba(76, 175, 80, 0.1); border-left: 3px solid #4caf50; border-radius: 8px;">
-        <p style="margin: 0; color: #81c784; font-size: 0.95em;"><strong>Key Takeaway:</strong> Yield curve inversions historically precede recessions by 6-24 months. They signal that credit expansion has created unsustainable economic structures. Austrian theory explains inversions as the market recognizing that long-term investments funded by artificially cheap credit won't survive at normalized rates.</p>
+    <div style="margin-top: 25px; padding: 15px; background: color-mix(in srgb, var(--pos) 10%, transparent); border-left: 3px solid var(--pos); border-radius: 8px;">
+        <p style="margin: 0; color: var(--pos); font-size: 0.95em;"><strong>Key Takeaway:</strong> Yield curve inversions historically precede recessions by 6-24 months. They signal that credit expansion has created unsustainable economic structures. Austrian theory explains inversions as the market recognizing that long-term investments funded by artificially cheap credit won't survive at normalized rates.</p>
     </div>
 </div>
 
@@ -559,12 +170,12 @@
             
             <!-- TAB 3: Economic Trends -->
             <div class="tab-content" data-tab="trends">
-                <div class="card" style="background: rgba(249, 115, 22, 0.05); border: 1px solid rgba(249, 115, 22, 0.2);">
+                <div class="card" style="background: var(--surface); border: 1px solid var(--border);">
                     <h2>Economic Trends</h2>
-                    <p style="color: #999; margin-bottom: 15px;">Historical data with synchronized time range control</p>
+                    <p style="color: var(--muted); margin-bottom: 15px;">Historical data with synchronized time range control</p>
                     
                     <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
-                        <span style="color: #999; align-self: center; font-weight: 500;">Time Range:</span>
+                        <span style="color: var(--muted); align-self: center; font-weight: 500;">Time Range:</span>
                         <button class="btn btn-secondary date-filter-btn active" data-range="all" onclick="applyDateFilter('all')">All Time</button>
                         <button class="btn btn-secondary date-filter-btn" data-range="20y" onclick="applyDateFilter('20y')">20 Years</button>
                         <button class="btn btn-secondary date-filter-btn" data-range="10y" onclick="applyDateFilter('10y')">10 Years</button>
@@ -632,10 +243,32 @@
         let charts = {};
         let isPlaying = false;
         
+        // Chart colours come from brand.css rather than being hardcoded here,
+        // so the charts follow the same palette as the rest of the site and
+        // switch with light and dark mode automatically. Read once at startup.
+        const BRAND = (() => {
+            const cs = getComputedStyle(document.documentElement);
+            const v = n => cs.getPropertyValue(n).trim();
+            return {
+                text: v('--text'), muted: v('--muted'), border: v('--border'),
+                accent: v('--accent'), pos: v('--pos'), neg: v('--neg'),
+                series: [v('--chart-1'), v('--chart-2'), v('--chart-3'),
+                         v('--chart-4'), v('--chart-5')],
+            };
+        })();
+
+        // Chart.js has no alpha helper, so build translucent fills from a hex.
+        const alpha = (hex, a) => {
+            const h = hex.replace('#', '');
+            const n = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
+            const [r, g, b] = [0, 2, 4].map(i => parseInt(n.slice(i, i + 2), 16));
+            return `rgba(${r}, ${g}, ${b}, ${a})`;
+        };
+
         // Chart.js defaults
-        Chart.defaults.color = '#a39d96';
-        Chart.defaults.borderColor = '#3a3531';
-        Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        Chart.defaults.color = BRAND.muted;
+        Chart.defaults.borderColor = BRAND.border;
+        Chart.defaults.font.family = 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
         
         // Tab switching
         document.querySelectorAll('.tab').forEach(tab => {
@@ -676,7 +309,7 @@
             } catch (error) {
                 console.error('Error loading data:', error);
                 document.getElementById('loading').innerHTML = 
-                    '<p style="color: #f4212e;">Error loading data. Retrying...</p>';
+                    '<p style="color: var(--neg);">Error loading data. Retrying...</p>';
                 setTimeout(loadData, 3000);
             }
         }
@@ -757,13 +390,13 @@
                     datasets: [{
                         label: 'Yield (%)',
                         data: dataPoints,
-                        borderColor: '#f97316',
-                        backgroundColor: 'rgba(249, 115, 22, 0.1)',
+                        borderColor: BRAND.series[0],
+                        backgroundColor: alpha(BRAND.series[0], 0.10),
                         borderWidth: 3,
                         fill: true,
                         tension: 0.4,
                         pointRadius: 6,
-                        pointBackgroundColor: '#f97316',
+                        pointBackgroundColor: BRAND.series[0],
                         parsing: {
                             xAxisKey: 'x',
                             yAxisKey: 'y'
@@ -809,7 +442,7 @@
                             },
                             grid: {
                                 display: true,
-                                color: 'rgba(255, 255, 255, 0.08)',  // Subtle gray
+                                color: BRAND.border,
                                 drawOnChartArea: true,
                                 drawTicks: false,
                                 lineWidth: 1
@@ -947,8 +580,8 @@
             document.getElementById('historicalDate').textContent = data.date;
 
             const isInverted = data.spread && data.spread < 0;
-            const color = isInverted ? '#f4212e' : '#f97316';
-            const bgColor = isInverted ? 'rgba(244, 33, 46, 0.1)' : 'rgba(249, 115, 22, 0.1)';
+            const color = isInverted ? BRAND.neg : BRAND.series[0];
+            const bgColor = isInverted ? alpha(BRAND.neg, 0.10) : alpha(BRAND.series[0], 0.10);
 
             // Build dataset as {x, y} points - include nulls for missing data
             const dataPoints = maturityOrder.map(mat => {
@@ -1029,7 +662,7 @@
                             },
                             grid: {
                                 display: true,
-                                color: 'rgba(255, 255, 255, 0.08)',  // Subtle gray
+                                color: BRAND.border,
                                 drawOnChartArea: true,
                                 drawTicks: false,
                                 lineWidth: 1
@@ -1146,8 +779,8 @@
                     datasets: [{
                         label: '10Y-2Y Spread (%)',
                         data: dataSource.spreads.map(d => d.spread),
-                        borderColor: '#f97316',
-                        backgroundColor: 'rgba(249, 115, 22, 0.1)',
+                        borderColor: BRAND.series[0],
+                        backgroundColor: alpha(BRAND.series[0], 0.10),
                         borderWidth: 2,
                         fill: true,
                         tension: 0.1,
@@ -1204,8 +837,8 @@
                     datasets: [{
                         label: 'Unemployment Rate (%)',
                         data: dataSource.map(d => d.value),
-                        borderColor: '#ec4899',
-                        backgroundColor: 'rgba(0, 186, 124, 0.1)',
+                        borderColor: BRAND.series[1],
+                        backgroundColor: alpha(BRAND.series[1], 0.10),
                         borderWidth: 2,
                         fill: true,
                         tension: 0.1,
@@ -1262,8 +895,8 @@
                     datasets: [{
                         label: 'Fed Funds Rate (%)',
                         data: dataSource.map(d => d.value),
-                        borderColor: '#f4212e',
-                        backgroundColor: 'rgba(244, 33, 46, 0.1)',
+                        borderColor: BRAND.series[2],
+                        backgroundColor: alpha(BRAND.series[2], 0.10),
                         borderWidth: 2,
                         fill: true,
                         tension: 0.1,
@@ -1320,8 +953,8 @@
                     datasets: [{
                         label: 'CPI YoY (%)',
                         data: dataSource.map(d => d.value),
-                        borderColor: '#f4212e',
-                        backgroundColor: 'rgba(244, 33, 46, 0.1)',
+                        borderColor: BRAND.series[3],
+                        backgroundColor: alpha(BRAND.series[3], 0.10),
                         borderWidth: 2,
                         fill: true,
                         tension: 0.1,
