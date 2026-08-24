@@ -28,9 +28,14 @@ a { color: var(--accent); text-underline-offset: 2px; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
 
 /* Wider than the other sites on purpose: this page is a data grid with six
-   charts, and squeezing it to a reading column would waste the space. */
+   charts, and squeezing it to a reading column would waste the space.
+   Set on --wrap rather than on .container alone, so the shared header and
+   footer widen with it. Otherwise the nav sits visibly narrower than the
+   content beneath it, which reads as a mistake rather than a wide canvas. */
+:root { --wrap: 84rem; }
+
 .container {
-  width: min(100% - 2.25rem, 84rem);
+  width: min(100% - 2.25rem, var(--wrap));
   margin-inline: auto;
   padding-block: clamp(1.5rem, 1rem + 2vw, 2.5rem);
 }
