@@ -102,6 +102,19 @@ h1 {
 .card h2 { font-size: 1.125rem; font-weight: 620; letter-spacing: -0.01em; margin-bottom: .9rem; }
 .card h3 { font-size: .9375rem; font-weight: 560; color: var(--muted); margin-bottom: .75rem; }
 
+/* Data vintage. Sits under a chart heading and states what the numbers are as
+   of, separately from when the pipeline last ran. Quiet on purpose: it is a
+   qualification, not a headline, but it has to be present on every chart or
+   the reader cannot tell a one-day lag from a one-month one. */
+.vintage {
+  font-size: .75rem;
+  line-height: 1.5;
+  color: var(--muted);
+  margin-top: -.5rem;
+  margin-bottom: .5rem;
+  text-wrap: pretty;
+}
+
 /* ---------- Metrics ------------------------------------------------------- */
 .metric-grid {
   display: grid;

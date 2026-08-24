@@ -69,14 +69,24 @@ def fetch_fred_series(series_id: str, limit: int = 1, units: str = None) -> Dict
     }
 
 
-def fetch_yield_curve() -> Dict[str, Any]:
-    """Fetch current Treasury yield curve."""
-    curve = {}
+def fetch_yield_curve() -> tuple[Dict[str, Any], Dict[str, Any]]:
+    """Fetch the current Treasury yield curve, with each tenor's own date.
+
+    The observation date is returned alongside the value because a curve
+    without one cannot be told apart from a stale one. FRED publishes the
+    daily constant-maturity series roughly one business day in arrears, so
+    "today's curve" is normally yesterday's, and the page should say so.
+
+    Tenors can differ by a day near a holiday, so dates are kept per tenor
+    rather than collapsed to one.
+    """
+    curve, dates = {}, {}
     for maturity, series_id in TREASURY_SERIES.items():
         data = fetch_fred_series(series_id)
         curve[maturity] = data["value"]
-    
-    return curve
+        dates[maturity] = data["date"]
+
+    return curve, dates
 
 
 def fetch_economic_indicators() -> Dict[str, Any]:
@@ -111,13 +121,21 @@ def main():
     print(f"Fetching data at {datetime.now(timezone.utc).isoformat()}")
     
     try:
-        yield_curve = fetch_yield_curve()
+        yield_curve, yield_curve_dates = fetch_yield_curve()
         economic = fetch_economic_indicators()
         spread = calculate_spread(yield_curve)
-        
+
+        # The curve's vintage is the newest tenor date present. last_updated
+        # is when this script ran, which is a different thing: a run can
+        # succeed and still return the same data FRED published yesterday.
+        observed = [d for d in yield_curve_dates.values() if d]
+        curve_as_of = max(observed) if observed else None
+
         output = {
             "last_updated": datetime.now(timezone.utc).isoformat(),
             "yield_curve": yield_curve,
+            "yield_curve_as_of": curve_as_of,
+            "yield_curve_dates": yield_curve_dates,
             "spread_10y_2y": spread,
             "economic": economic,
         }
@@ -126,7 +144,7 @@ def main():
             json.dump(output, f, indent=2)
         
         print("[OK] Data updated successfully")
-        print(f"   Yield curve: {len([v for v in yield_curve.values() if v])} maturities")
+        print(f"   Yield curve: {len([v for v in yield_curve.values() if v])} maturities, as of {curve_as_of}")
         print(f"   10Y-2Y spread: {spread}%")
         print(f"   Economic indicators: {len(economic)} series")
         

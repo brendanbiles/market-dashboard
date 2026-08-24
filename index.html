@@ -59,6 +59,7 @@
 
                 <div class="card">
                     <h2>Treasury Yield Curve</h2>
+                    <p class="vintage" id="curveVintage"></p>
                     <div class="chart-container">
                         <canvas id="currentYieldChart"></canvas>
                     </div>
@@ -70,7 +71,8 @@
             <div class="tab-content" data-tab="history">
                 <div class="card">
                     <h2>Yield Curve Time Machine</h2>
-                    <h3>Scrub through 64 years of Treasury yield curves</h3>
+                    <h3>Scrub through 64 years of Treasury yield curves, sampled monthly</h3>
+                    <p class="vintage" id="timeMachineVintage"></p>
                     
                     <div class="slider-control">
                         <div class="slider-label">
@@ -191,6 +193,7 @@
                 
                 <div class="card">
                     <h2>Fed Funds Rate</h2>
+                    <p class="vintage" data-vintage="fed_funds"></p>
                     <div class="chart-container">
                         <canvas id="fedFundsChart"></canvas>
                     </div>
@@ -198,6 +201,7 @@
                 
                 <div class="card">
                     <h2>Inflation Rate (CPI YoY)</h2>
+                    <p class="vintage" data-vintage="cpi_yoy"></p>
                     <div class="chart-container">
                         <canvas id="inflationChart"></canvas>
                     </div>
@@ -205,6 +209,7 @@
                 
                 <div class="card">
                     <h2>Unemployment Rate</h2>
+                    <p class="vintage" data-vintage="unemployment"></p>
                     <div class="chart-container">
                         <canvas id="unemploymentChart"></canvas>
                     </div>
@@ -212,6 +217,7 @@
                 
                 <div class="card">
                     <h2>2Y-10Y Spread</h2>
+                    <p class="vintage" data-vintage="spread"></p>
                     <div class="chart-container">
                         <canvas id="spreadTrendChart"></canvas>
                     </div>
@@ -291,6 +297,72 @@
         });
         
         // Load data
+        // Every series here has its own publication lag, and they are wildly
+        // different: Treasury yields land about a business day late, CPI and
+        // unemployment about a month late, and the Time Machine is sampled
+        // monthly by design. Without a stated vintage all three look identical,
+        // and all three look broken. "Last checked" is when we asked FRED;
+        // "as of" is what FRED had.
+        function fmtDate(d) {
+            if (!d) return 'unknown';
+            // FRED dates are plain YYYY-MM-DD. Parsing them directly would be
+            // read as UTC midnight and shown as the previous day west of GMT.
+            const [y, m, day] = d.split('-').map(Number);
+            return new Date(y, m - 1, day).toLocaleDateString(undefined,
+                { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+
+        function daysAgo(d) {
+            if (!d) return null;
+            const [y, m, day] = d.split('-').map(Number);
+            return Math.round((Date.now() - new Date(y, m - 1, day)) / 86400000);
+        }
+
+        function vintageText(date, note) {
+            const n = daysAgo(date);
+            const age = n === null ? '' :
+                        n <= 0 ? ' (today)' :
+                        n === 1 ? ' (1 day ago)' :
+                        n < 45 ? ` (${n} days ago)` :
+                        ` (${Math.round(n / 30)} months ago)`;
+            return `Data as of ${fmtDate(date)}${age}${note ? ' · ' + note : ''}`;
+        }
+
+        function showVintages(current, historical) {
+            const set = (el, text) => { if (el) el.textContent = text; };
+
+            const spreadsAll = historical.spreads_all || [];
+            const lastSpreadDate = spreadsAll.length ? spreadsAll[spreadsAll.length - 1].date : null;
+
+            // yield_curve_as_of was added on 2026-08-24. Until a collection run
+            // writes it, fall back to the spread series: both are built from the
+            // same daily FRED constant-maturity data and share its lag.
+            set(document.getElementById('curveVintage'),
+                vintageText(current.yield_curve_as_of || lastSpreadDate,
+                    'FRED publishes the daily series about one business day in arrears'));
+
+            const monthly = historical.yield_curves_monthly || [];
+            const lastMonthly = monthly.length ? monthly[monthly.length - 1].date : null;
+            set(document.getElementById('timeMachineVintage'),
+                `Newest point ${fmtDate(lastMonthly)}. One sample per month, so the latest ` +
+                `is the first business day of the current month, not today.`);
+
+            const ec = historical.economic_indicators || {};
+            const lastOf = k => (ec[k] && ec[k].length) ? ec[k][ec[k].length - 1].date : null;
+
+            const sources = {
+                spread: [lastSpreadDate, 'daily'],
+                fed_funds: [lastOf('fed_funds'), 'monthly series'],
+                cpi_yoy: [lastOf('cpi_yoy'), 'monthly series, released in arrears'],
+                unemployment: [lastOf('unemployment'), 'monthly series, released in arrears'],
+            };
+
+            document.querySelectorAll('[data-vintage]').forEach(el => {
+                const [date, note] = sources[el.dataset.vintage] || [];
+                set(el, vintageText(date, note));
+            });
+        }
+
         async function loadData() {
             try {
                 const [current, historical] = await Promise.all([
@@ -301,9 +373,11 @@
                 currentData = current;
                 historicalData = historical;
                 
-                document.getElementById('lastUpdated').textContent = 
-                    'Last updated: ' + new Date(current.last_updated).toLocaleString();
-                
+                document.getElementById('lastUpdated').textContent =
+                    'Last checked: ' + new Date(current.last_updated).toLocaleString();
+
+                showVintages(current, historical);
+
                 initializeDashboard();
                 
                 document.getElementById('loading').style.display = 'none';
@@ -536,7 +610,14 @@
                 const tenYearArr = (historicalData?.yield_curves_monthly || [])
                     .filter(d => d.curve['10Y'] !== null && d.curve['10Y'] !== undefined)
                     .map(d => ({ date: d.date, value: d.curve['10Y'] }));
-                const asOfDate = currentData.last_updated.split('T')[0];
+                // The observation date, not the run date. last_updated is when
+                // this pipeline last asked FRED, which is today on every run
+                // whether or not FRED published anything new. Using it here
+                // stamped four-day-old yields with today's date.
+                const asOfDate = currentData.yield_curve_as_of
+                    || (historicalData?.spreads_all?.length
+                        ? historicalData.spreads_all[historicalData.spreads_all.length - 1].date
+                        : null);
                 const table = rangesTable([
                     { label: '52W range',  stats: getRangeStats(tenYearArr, 'value', tenYearYield,  1), suffix: '%' },
                     { label: '2Y range',   stats: getRangeStats(tenYearArr, 'value', tenYearYield,  2), suffix: '%' },
