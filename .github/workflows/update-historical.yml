@@ -34,9 +34,16 @@ jobs:
       - name: Export historical data to JSON
         run: python export_historical_json.py
 
+      # Full daily curve history, all 11 tenors back to 1962. Uses FRED's
+      # unauthenticated CSV endpoint, so it needs no key. Appends one row per
+      # trading day, which is why it is on the daily job rather than the
+      # 15-minute one.
+      - name: Build daily yield curve history
+        run: python fetch_daily_curves.py
+
       - name: Commit and push if data changed
         run: |
           git config user.name "Market Data Bot"
           git config user.email "brendanbiles@gmail.com"
-          git add historical_data.json
+          git add historical_data.json daily_curves.json
           git diff --quiet && git diff --staged --quiet || (git commit -m "Update historical data - $(date -u +"%Y-%m-%d")" && git push)

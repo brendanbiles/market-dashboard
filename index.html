@@ -71,7 +71,7 @@
             <div class="tab-content" data-tab="history">
                 <div class="card">
                     <h2>Yield Curve Time Machine</h2>
-                    <h3>Scrub through 64 years of Treasury yield curves, sampled monthly</h3>
+                    <h3>Scrub through 64 years of Treasury yield curves, day by day</h3>
                     <p class="vintage" id="timeMachineVintage"></p>
                     
                     <div class="slider-control">
@@ -341,11 +341,19 @@
                 vintageText(current.yield_curve_as_of || lastSpreadDate,
                     'FRED publishes the daily series about one business day in arrears'));
 
-            const monthly = historical.yield_curves_monthly || [];
-            const lastMonthly = monthly.length ? monthly[monthly.length - 1].date : null;
-            set(document.getElementById('timeMachineVintage'),
-                `Newest point ${fmtDate(lastMonthly)}. One sample per month, so the latest ` +
-                `is the first business day of the current month, not today.`);
+            if (dailyCurves && dailyCurves.dates && dailyCurves.dates.length) {
+                const d = dailyCurves.dates;
+                const full = (dailyCurves.tenor_count || []).filter(c => c === dailyCurves.tenors.length).length;
+                set(document.getElementById('timeMachineVintage'),
+                    `${d.length.toLocaleString()} trading days, ${fmtDate(d[0])} to ${fmtDate(d[d.length - 1])}. ` +
+                    `Tenors began at different dates, so curves before 2001 have fewer points: ` +
+                    `${full.toLocaleString()} days carry all ${dailyCurves.tenors.length}.`);
+            } else {
+                const monthly = historical.yield_curves_monthly || [];
+                const lastMonthly = monthly.length ? monthly[monthly.length - 1].date : null;
+                set(document.getElementById('timeMachineVintage'),
+                    `Daily history unavailable, showing monthly samples. Newest point ${fmtDate(lastMonthly)}.`);
+            }
 
             const ec = historical.economic_indicators || {};
             const lastOf = k => (ec[k] && ec[k].length) ? ec[k][ec[k].length - 1].date : null;
@@ -363,12 +371,45 @@
             });
         }
 
+        // ---- Curve frames -------------------------------------------------
+        // daily_curves.json is columnar: one dates array plus one array per
+        // tenor. The chart wants one frame at a time, so build frames on
+        // demand rather than materialising 16,000 objects up front.
+        let dailyCurves = null;
+
+        function curveCount() {
+            if (dailyCurves && dailyCurves.dates) return dailyCurves.dates.length;
+            return (historicalData?.yield_curves_monthly || []).length;
+        }
+
+        function curveFrame(i) {
+            if (!dailyCurves || !dailyCurves.dates) {
+                return (historicalData?.yield_curves_monthly || [])[i];
+            }
+            const curve = {};
+            for (const t of dailyCurves.tenors) {
+                const v = dailyCurves.series[t][i];
+                if (v !== null && v !== undefined) curve[t] = v;
+            }
+            // Recomputed per frame rather than stored: it is one subtraction,
+            // and storing it would be a third copy of the same two numbers.
+            const spread = (curve['10Y'] != null && curve['2Y'] != null)
+                ? Math.round((curve['10Y'] - curve['2Y']) * 100) / 100
+                : null;
+            return { date: dailyCurves.dates[i], curve, spread };
+        }
+
         async function loadData() {
             try {
-                const [current, historical] = await Promise.all([
+                const [current, historical, daily] = await Promise.all([
                     fetch('data.json?' + new Date().getTime()).then(r => r.json()),
-                    fetch('historical_data.json?' + new Date().getTime()).then(r => r.json())
+                    fetch('historical_data.json?' + new Date().getTime()).then(r => r.json()),
+                    // Optional. If this fails the Time Machine falls back to the
+                    // monthly samples rather than the tab going blank.
+                    fetch('daily_curves.json?' + new Date().getTime())
+                        .then(r => r.ok ? r.json() : null).catch(() => null)
                 ]);
+                dailyCurves = daily;
                 
                 currentData = current;
                 historicalData = historical;
@@ -394,7 +435,7 @@
         function initializeDashboard() {
             renderCurrentYieldCurve();
             renderCurrentEconomicIndicators();
-            renderHistoricalYieldCurve(historicalData.yield_curves_monthly.length - 1);
+            renderHistoricalYieldCurve(curveCount() - 1);
             renderSpreadTrend();
             renderUnemploymentTrend();
             renderFedFundsTrend();
@@ -402,7 +443,7 @@
             
             // Setup slider
             const slider = document.getElementById('dateSlider');
-            slider.max = historicalData.yield_curves_monthly.length - 1;
+            slider.max = curveCount() - 1;
             slider.value = slider.max;
             
             slider.addEventListener('input', (e) => {
@@ -607,9 +648,16 @@
 
             const tenYearYield = currentData.yield_curve?.['10Y'];
             if (tenYearYield !== null && tenYearYield !== undefined) {
-                const tenYearArr = (historicalData?.yield_curves_monthly || [])
-                    .filter(d => d.curve['10Y'] !== null && d.curve['10Y'] !== undefined)
-                    .map(d => ({ date: d.date, value: d.curve['10Y'] }));
+                // Daily where available. Monthly sampling misses the extremes
+                // inside a month, so a 52-week range built from it understates
+                // how far the yield actually travelled.
+                const tenYearArr = dailyCurves?.series?.['10Y']
+                    ? dailyCurves.dates
+                        .map((date, i) => ({ date, value: dailyCurves.series['10Y'][i] }))
+                        .filter(d => d.value !== null && d.value !== undefined)
+                    : (historicalData?.yield_curves_monthly || [])
+                        .filter(d => d.curve['10Y'] !== null && d.curve['10Y'] !== undefined)
+                        .map(d => ({ date: d.date, value: d.curve['10Y'] }));
                 // The observation date, not the run date. last_updated is when
                 // this pipeline last asked FRED, which is today on every run
                 // whether or not FRED published anything new. Using it here
@@ -660,7 +708,8 @@
         }
 
         function renderHistoricalYieldCurve(index) {
-            const data = historicalData.yield_curves_monthly[index];
+            const data = curveFrame(index);
+            if (!data) return;
             document.getElementById('historicalDate').textContent = data.date;
 
             const isInverted = data.spread && data.spread < 0;
@@ -1084,22 +1133,28 @@
 
 
         function jumpToDate(targetDate) {
-            const target = new Date(targetDate).getTime();
-            let closestIndex = 0;
-            let closestDiff = Infinity;
-            historicalData.yield_curves_monthly.forEach((d, i) => {
-                const diff = Math.abs(new Date(d.date).getTime() - target);
-                if (diff < closestDiff) {
-                    closestDiff = diff;
-                    closestIndex = i;
-                }
-            });
+            // Dates are sorted, so binary search rather than scanning all
+            // 16,000 of them on every jump.
+            const dates = dailyCurves?.dates
+                || (historicalData?.yield_curves_monthly || []).map(d => d.date);
+            let lo = 0, hi = dates.length - 1;
+            while (lo < hi) {
+                const mid = (lo + hi) >> 1;
+                if (dates[mid] < targetDate) lo = mid + 1; else hi = mid;
+            }
+            // Prefer whichever neighbour is actually nearer the target.
+            let closestIndex = lo;
+            if (lo > 0) {
+                const a = Math.abs(new Date(dates[lo]) - new Date(targetDate));
+                const b = Math.abs(new Date(dates[lo - 1]) - new Date(targetDate));
+                if (b < a) closestIndex = lo - 1;
+            }
             document.getElementById('dateSlider').value = closestIndex;
             renderHistoricalYieldCurve(closestIndex);
         }
         
         function jumpToToday() {
-            const lastIndex = historicalData.yield_curves_monthly.length - 1;
+            const lastIndex = curveCount() - 1;
             document.getElementById('dateSlider').value = lastIndex;
             renderHistoricalYieldCurve(lastIndex);
         }
@@ -1114,9 +1169,16 @@
             
             const slider = document.getElementById('dateSlider');
             let currentIndex = 0;
-            
+
+            // Fixed playthrough length regardless of resolution. Stepping the
+            // daily series one frame per tick would run for about nine hours;
+            // the old fixed stride of 3 was sized for 774 monthly frames.
+            const TICK_MS = 60;
+            const TARGET_MS = 30000;
+            const stride = Math.max(1, Math.ceil(curveCount() / (TARGET_MS / TICK_MS)));
+
             const interval = setInterval(() => {
-                if (currentIndex >= historicalData.yield_curves_monthly.length - 1) {
+                if (currentIndex >= curveCount() - 1) {
                     clearInterval(interval);
                     isPlaying = false;
                     btn.textContent = 'Play Time-Lapse';
@@ -1124,10 +1186,10 @@
                     return;
                 }
                 
-                currentIndex += 3; // Skip every 3 months for speed
+                currentIndex = Math.min(currentIndex + stride, curveCount() - 1);
                 slider.value = currentIndex;
                 renderHistoricalYieldCurve(currentIndex);
-            }, 100);
+            }, TICK_MS);
         }
         
         // Initial load
