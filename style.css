@@ -194,21 +194,64 @@ h1 {
   border: 1px solid var(--border);
 }
 
-.slider-label {
-  display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: .35rem 1rem;
-  margin-bottom: .75rem;
-  color: var(--muted);
-  font-size: .8125rem;
-}
+.timeline-readout { text-align: center; margin-bottom: .9rem; }
 
 .date-display {
-  font-size: 1rem;
+  font-size: 1.0625rem;
   font-weight: 660;
   color: var(--accent);
   font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.date-display sup {
+  font-size: .58em;
+  font-weight: 560;
+  vertical-align: super;
+  margin-left: .04em;
+}
+
+/* Decade marks live under the scrubber so the control reads as a timeline
+   rather than a bare slider. Positions come from the JS in index.html. */
+.timeline { position: relative; padding: .35rem 0 2.1rem; }
+
+.timeline-ticks {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 1.65rem;
+  pointer-events: none;
+}
+
+.timeline-ticks .tick {
+  position: absolute;
+  top: 0;
+  width: 1px;
+  background: var(--border);
+}
+
+.timeline-ticks .tick-minor { height: 5px; }
+
+.timeline-ticks .tick-major {
+  height: 9px;
+  background: color-mix(in srgb, var(--muted) 65%, transparent);
+}
+
+/* Six decade labels crowd a phone-width track, so narrow screens keep only
+   the 20-year marks. The tick lines all stay. */
+@media (max-width: 640px) {
+  .timeline-ticks .tick-year-alt { display: none; }
+}
+
+.timeline-ticks .tick-year {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: .6875rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .02em;
+  white-space: nowrap;
 }
 
 input[type="range"] {

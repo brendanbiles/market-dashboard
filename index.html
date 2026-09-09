@@ -75,12 +75,13 @@
                     <p class="vintage" id="timeMachineVintage"></p>
                     
                     <div class="slider-control">
-                        <div class="slider-label">
-                            <span>1962</span>
+                        <div class="timeline-readout">
                             <span class="date-display" id="historicalDate">Loading...</span>
-                            <span>2026</span>
                         </div>
-                        <input type="range" id="dateSlider" min="0" max="773" value="773" step="1">
+                        <div class="timeline">
+                            <input type="range" id="dateSlider" min="0" max="773" value="773" step="1">
+                            <div class="timeline-ticks" id="timelineTicks" aria-hidden="true"></div>
+                        </div>
                         
                         <div class="button-group">
                             <button class="btn btn-secondary" onclick="jumpToDate('2008-09-15')">2008 Crisis</button>
@@ -399,6 +400,61 @@
             return { date: dailyCurves.dates[i], curve, spread };
         }
 
+        function curveDates() {
+            return dailyCurves?.dates
+                || (historicalData?.yield_curves_monthly || []).map(d => d.date);
+        }
+
+        // The axis is pinned to the whole series' high rather than each
+        // frame's, so scrubbing and the time-lapse do not rescale under you --
+        // and today's rates read as low next to 1981 instead of filling the box.
+        let yieldCeilingCache = null;
+        function yieldCeiling() {
+            if (yieldCeilingCache !== null) return yieldCeilingCache;
+            let max = 0;
+            if (dailyCurves?.series) {
+                for (const t of dailyCurves.tenors) {
+                    for (const v of dailyCurves.series[t]) {
+                        if (v != null && v > max) max = v;
+                    }
+                }
+            } else {
+                for (const frame of (historicalData?.yield_curves_monthly || [])) {
+                    for (const v of Object.values(frame.curve || {})) {
+                        if (v != null && v > max) max = v;
+                    }
+                }
+            }
+            // Round up to an even percent so the axis ends on a labelled tick.
+            yieldCeilingCache = Math.max(2, Math.ceil(max / 2) * 2);
+            return yieldCeilingCache;
+        }
+
+        // Decade marks under the scrubber. Positions are in the thumb's own
+        // track -- its centre travels from 9px to width-9px, not 0 to 100%.
+        function buildTimelineTicks() {
+            const el = document.getElementById('timelineTicks');
+            const dates = curveDates();
+            if (!el || dates.length < 2) return;
+            const startMs = new Date(dates[0]).getTime();
+            const endMs = new Date(dates[dates.length - 1]).getTime();
+            if (!(endMs > startMs)) return;
+
+            const firstYear = Number(dates[0].slice(0, 4));
+            const lastYear = Number(dates[dates.length - 1].slice(0, 4));
+            let html = '';
+            for (let y = Math.ceil(firstYear / 5) * 5; y <= lastYear; y += 5) {
+                const frac = (new Date(`${y}-01-01`).getTime() - startMs) / (endMs - startMs);
+                if (frac < 0 || frac > 1) continue;
+                const major = y % 10 === 0;
+                const left = `calc(9px + (100% - 18px) * ${frac.toFixed(5)})`;
+                html += `<span class="tick ${major ? 'tick-major' : 'tick-minor'}" style="left:${left}">`
+                    + (major ? `<span class="tick-year${y % 20 === 0 ? '' : ' tick-year-alt'}">${y}</span>` : '')
+                    + '</span>';
+            }
+            el.innerHTML = html;
+        }
+
         async function loadData() {
             try {
                 const [current, historical, daily] = await Promise.all([
@@ -442,6 +498,7 @@
             renderInflationTrend();
             
             // Setup slider
+            buildTimelineTicks();
             const slider = document.getElementById('dateSlider');
             slider.max = curveCount() - 1;
             slider.value = slider.max;
@@ -604,11 +661,20 @@
             return `${months[m - 1]} ${d}, ${y}`;
         }
 
+        // "Sep 9th, 2026", with the ordinal suffix raised. Returns HTML, so
+        // callers must use innerHTML rather than textContent.
+        function formatDateLong(dateStr) {
+            const [y, m, d] = dateStr.split('-').map(Number);
+            const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            const suffix = ordinal(d).slice(String(d).length);
+            return `${months[m - 1]} ${d}<sup>${suffix}</sup>, ${y}`;
+        }
+
         function rangesTable(ranges) {
             const rows = ranges.map(({ label, stats, suffix }) => {
                 if (!stats) return '';
                 const range = `${stats.min.toFixed(2)}${suffix}–${stats.max.toFixed(2)}${suffix}`;
-                return `<tr><td>${label}: ${range}</td><td>${ordinal(stats.pct)} percentile</td></tr>`;
+                return `<tr><td>${label}: ${range}</td><td>${stats.pct} %ile</td></tr>`;
             }).join('');
             return rows ? `<table class="metric-ranges">${rows}</table>` : '';
         }
@@ -629,11 +695,11 @@
                     const s = ind.suffix;
                     const v = info.value;
                     const table = rangesTable([
-                        { label: '52W range',  stats: getRangeStats(histArr, 'value', v,  1), suffix: s },
-                        { label: '2Y range',   stats: getRangeStats(histArr, 'value', v,  2), suffix: s },
-                        { label: '5Y range',   stats: getRangeStats(histArr, 'value', v,  5), suffix: s },
-                        { label: '10Y range',  stats: getRangeStats(histArr, 'value', v, 10), suffix: s },
-                        { label: '50Y range',  stats: getRangeStats(histArr, 'value', v, 50), suffix: s },
+                        { label: '52W',  stats: getRangeStats(histArr, 'value', v,  1), suffix: s },
+                        { label: '2Y',   stats: getRangeStats(histArr, 'value', v,  2), suffix: s },
+                        { label: '5Y',   stats: getRangeStats(histArr, 'value', v,  5), suffix: s },
+                        { label: '10Y',  stats: getRangeStats(histArr, 'value', v, 10), suffix: s },
+                        { label: '50Y',  stats: getRangeStats(histArr, 'value', v, 50), suffix: s },
                     ]);
                     html += `
                         <div class="metric">
@@ -667,11 +733,11 @@
                         ? historicalData.spreads_all[historicalData.spreads_all.length - 1].date
                         : null);
                 const table = rangesTable([
-                    { label: '52W range',  stats: getRangeStats(tenYearArr, 'value', tenYearYield,  1), suffix: '%' },
-                    { label: '2Y range',   stats: getRangeStats(tenYearArr, 'value', tenYearYield,  2), suffix: '%' },
-                    { label: '5Y range',   stats: getRangeStats(tenYearArr, 'value', tenYearYield,  5), suffix: '%' },
-                    { label: '10Y range',  stats: getRangeStats(tenYearArr, 'value', tenYearYield, 10), suffix: '%' },
-                    { label: '50Y range',  stats: getRangeStats(tenYearArr, 'value', tenYearYield, 50), suffix: '%' },
+                    { label: '52W',  stats: getRangeStats(tenYearArr, 'value', tenYearYield,  1), suffix: '%' },
+                    { label: '2Y',   stats: getRangeStats(tenYearArr, 'value', tenYearYield,  2), suffix: '%' },
+                    { label: '5Y',   stats: getRangeStats(tenYearArr, 'value', tenYearYield,  5), suffix: '%' },
+                    { label: '10Y',  stats: getRangeStats(tenYearArr, 'value', tenYearYield, 10), suffix: '%' },
+                    { label: '50Y',  stats: getRangeStats(tenYearArr, 'value', tenYearYield, 50), suffix: '%' },
                 ]);
                 html += `
                     <div class="metric">
@@ -688,11 +754,11 @@
                 const isInverted = spread < 0;
                 const spreadArr = historicalData?.spreads_all || [];
                 const table = rangesTable([
-                    { label: '52W range',  stats: getRangeStats(spreadArr, 'spread', spread,  1), suffix: '%' },
-                    { label: '2Y range',   stats: getRangeStats(spreadArr, 'spread', spread,  2), suffix: '%' },
-                    { label: '5Y range',   stats: getRangeStats(spreadArr, 'spread', spread,  5), suffix: '%' },
-                    { label: '10Y range',  stats: getRangeStats(spreadArr, 'spread', spread, 10), suffix: '%' },
-                    { label: '50Y range',  stats: getRangeStats(spreadArr, 'spread', spread, 50), suffix: '%' },
+                    { label: '52W',  stats: getRangeStats(spreadArr, 'spread', spread,  1), suffix: '%' },
+                    { label: '2Y',   stats: getRangeStats(spreadArr, 'spread', spread,  2), suffix: '%' },
+                    { label: '5Y',   stats: getRangeStats(spreadArr, 'spread', spread,  5), suffix: '%' },
+                    { label: '10Y',  stats: getRangeStats(spreadArr, 'spread', spread, 10), suffix: '%' },
+                    { label: '50Y',  stats: getRangeStats(spreadArr, 'spread', spread, 50), suffix: '%' },
                 ]);
                 html += `
                     <div class="metric">
@@ -710,7 +776,7 @@
         function renderHistoricalYieldCurve(index) {
             const data = curveFrame(index);
             if (!data) return;
-            document.getElementById('historicalDate').textContent = data.date;
+            document.getElementById('historicalDate').innerHTML = formatDateLong(data.date);
 
             const isInverted = data.spread && data.spread < 0;
             const color = isInverted ? BRAND.neg : BRAND.series[0];
@@ -722,12 +788,19 @@
                 return yValue !== undefined ? { x: xPositions[mat], y: yValue, label: mat } : null;
             }).filter(p => p !== null);
 
+            // Per-point array, not a single colour. Chart.js treats a scalar
+            // point colour as a "shared" option, memoises it on the first
+            // render, and update('none') never refreshes it -- which left green
+            // dots sitting on an inverted red curve. An array is indexable, so
+            // point options get re-resolved every frame.
+            const pointColors = dataPoints.map(() => color);
+
             if (charts.historicalYield) {
                 const ds = charts.historicalYield.data.datasets[0];
                 ds.data = dataPoints;
                 ds.borderColor = color;
                 ds.backgroundColor = bgColor;
-                ds.pointBackgroundColor = color;
+                ds.pointBackgroundColor = pointColors;
                 charts.historicalYield.update('none');
                 renderSpreadIndicator('historicalSpreadIndicator', data.spread);
                 return;
@@ -747,7 +820,7 @@
                         fill: true,
                         tension: 0.4,
                         pointRadius: 6,
-                        pointBackgroundColor: color,
+                        pointBackgroundColor: pointColors,
                         parsing: {
                             xAxisKey: 'x',
                             yAxisKey: 'y'
@@ -802,9 +875,11 @@
                             }
                         },
                         y: {
-                            beginAtZero: true,
-                                                        ticks: {
-                                callback: value => value.toFixed(1) + '%'
+                            min: 0,
+                            max: yieldCeiling(),
+                            ticks: {
+                                stepSize: 2,
+                                callback: value => value.toFixed(0) + '%'
                             }
                         }
                     }
