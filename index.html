@@ -262,7 +262,7 @@
             return {
                 text: v('--text'), muted: v('--muted'), border: v('--border'),
                 accent: v('--accent'), pos: v('--pos'), neg: v('--neg'),
-                flat: v('--flat'),
+                flat: v('--flat'), unknown: v('--unknown'),
                 series: [v('--chart-1'), v('--chart-2'), v('--chart-3'),
                          v('--chart-4'), v('--chart-5')],
             };
@@ -416,6 +416,14 @@
         // Flat splits "normal" in two, it does not soften "inverted". Every one
         // of those 88 crossings now passes through flat, so the curve never
         // jumps green to red.
+        //
+        // A fourth state, null, covers the first fifth of the record. The 2Y
+        // series only starts in Jun 1976, so there is no 10Y-2Y before it and
+        // no basis for calling those curves anything. Painting them green said
+        // "normal" about 3,592 days we cannot classify -- 1,126 of which have
+        // the 10Y below the 1Y, including the 1973-74 inversion that ran into
+        // the worst postwar recession to that point. Grey says we do not know,
+        // which is the true answer.
         const FLAT_MAX_SPREAD = 0.25;
 
         function spreadState(spread) {
@@ -423,6 +431,20 @@
             if (spread < 0) return 'inverted';
             if (spread < FLAT_MAX_SPREAD) return 'flat';
             return 'normal';
+        }
+
+        // Derived, not hardcoded, so it stays right if the series is ever
+        // extended backwards or the source changes its start date.
+        let twoYearStartCache;
+        function twoYearStart() {
+            if (twoYearStartCache !== undefined) return twoYearStartCache;
+            twoYearStartCache = null;
+            const series = dailyCurves?.series?.['2Y'];
+            if (series) {
+                const i = series.findIndex(v => v !== null && v !== undefined);
+                if (i >= 0) twoYearStartCache = dailyCurves.dates[i];
+            }
+            return twoYearStartCache;
         }
 
         function curveDates() {
@@ -695,6 +717,12 @@
             return `${months[m - 1]} ${d}<sup>${suffix}</sup>, ${y}`;
         }
 
+        function formatMonthYear(dateStr) {
+            const [y, m] = dateStr.split('-').map(Number);
+            const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            return `${months[m - 1]} ${y}`;
+        }
+
         function rangesTable(ranges) {
             const rows = ranges.map(({ label, stats, suffix }) => {
                 if (!stats) return '';
@@ -803,8 +831,9 @@
             if (!data) return;
             document.getElementById('historicalDate').innerHTML = formatDateLong(data.date);
 
-            const color = { inverted: BRAND.neg, flat: BRAND.flat }[spreadState(data.spread)]
-                || BRAND.series[0];
+            const color = { inverted: BRAND.neg, flat: BRAND.flat,
+                            normal: BRAND.series[0] }[spreadState(data.spread)]
+                || BRAND.unknown;
             const bgColor = alpha(color, 0.10);
 
             // Build dataset as {x, y} points - include nulls for missing data
@@ -916,8 +945,16 @@
         
         function renderSpreadIndicator(elementId, spread) {
             const container = document.getElementById(elementId);
-            if (spread === null) {
-                container.innerHTML = '';
+            if (spread === null || spread === undefined) {
+                // Say why the badge is missing rather than leaving a gap the
+                // reader has to explain to themselves. The curve is grey here
+                // for the same reason.
+                const start = twoYearStart();
+                container.innerHTML = `
+                    <div class="spread-indicator spread-unknown">
+                        10Y-2Y Spread: not measurable${start ? ` before ${formatMonthYear(start)}` : ''} (no 2Y yield yet)
+                    </div>
+                `;
                 return;
             }
             
