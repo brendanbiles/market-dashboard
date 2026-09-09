@@ -44,11 +44,6 @@ a { color: var(--accent); text-underline-offset: 2px; }
      it. */
   --flat: var(--chart-3);
 
-  /* Before the 2Y series starts there is no 10Y-2Y to classify, so those
-     curves get neither the good colour nor the bad one. --chart-5 is the
-     palette's warm grey and is the one series colour that reads as "no
-     reading" rather than as a category. */
-  --unknown: var(--chart-5);
 }
 
 .container {
@@ -207,13 +202,6 @@ h1 {
   background: color-mix(in srgb, var(--flat) 12%, transparent);
   color: var(--flat);
   border: 1px solid color-mix(in srgb, var(--flat) 40%, transparent);
-}
-
-.spread-unknown {
-  background: color-mix(in srgb, var(--unknown) 10%, transparent);
-  color: var(--muted);
-  border: 1px dashed color-mix(in srgb, var(--unknown) 45%, transparent);
-  font-weight: 560;
 }
 
 /* ---------- Controls ------------------------------------------------------ */

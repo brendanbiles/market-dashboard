@@ -2,27 +2,70 @@
 
 A clean, auto-updating dashboard displaying key financial and economic indicators built around hard-to-visualize FRED data.
 
-**Live Dashboard:** https://brendanbiles.github.io/market-dashboard/
+**Live Dashboard:** https://markets.brendanbiles.com
 
 ## Features
 
 - **Treasury Yield Curve** - Real-time visualization of all Treasury maturities (1M to 30Y) with a goldilocks log/linear hybrid X-axis
-- **10Y-2Y Spread** - Recession indicator with inverted curve warnings
+- **Curve shape classification** - Every curve scored normal / flat / inverted, colour-coded green / amber / red. See [Classifying the curve](#classifying-the-curve)
 - **Economic Indicators** - Unemployment, CPI YoY, Fed Funds Rate — each with 52W/2Y/5Y/10Y/50Y range tables and percentile context
-- **64-Year Yield Curve Time Machine** - Scrub through every month of Treasury history since 1962; jump to key historical events
+- **64-Year Yield Curve Time Machine** - Scrub through all 16,154 trading days since Jan 2 1962, day by day; decade-marked timeline, jump-to-event buttons, and a 30-second time-lapse on a fixed 0-18% axis so the shape is comparable across eras
 - **Economic Trends** - Long-run charts for Fed Funds, CPI, Unemployment, and 2Y-10Y spread with synchronized time range control
 - **Historical Inversion Periods** - Annotated reference covering every major yield curve inversion with Austrian economics commentary
 
+## Classifying the curve
+
+Every frame of the Time Machine is scored into one of three states, which set
+the curve's colour and the badge beneath it.
+
+| State | Spread | Colour |
+|---|---|---|
+| Normal | >= +0.25% | green (`--chart-1`) |
+| Flat | 0 to +0.25% | amber (`--chart-3`) |
+| Inverted | < 0 | red (`--neg`) |
+
+**Why a flat band at all.** A spread of +0.13% is the same curve as one at
+-0.05%, but a two-state rule paints them green and red. The 10Y-2Y spread
+crosses zero constantly - 88 crossings since 1976, 64 of them reversing inside
+a month, four days running in September 2024 - so a binary indicator whipsaws
+between "normal" and "recession indicator" on moves that mean nothing. Every
+one of those crossings passes through the flat band, so the curve never jumps
+green to red.
+
+**Why 25bp.** It is one Fed move from inversion, and days inside the band
+behave like it. On 10Y-2Y, 56.8% of them invert within six months against 6.3%
+of normally sloped days, over 11.3% of the record. Widening to +0.50% dilutes
+the signal to 39.5% and starts calling visibly upward-sloping curves flat;
+tightening to +0.15% gains little and halves the coverage.
+
+**The band never crosses zero.** Inversion keeps its standard definition, so
+the Historical Inversion Periods section still matches the colours above it.
+Flat splits "normal" in two rather than softening "inverted".
+
+**Which spread.** 10Y-2Y is the headline measure, but FRED's 2Y series starts
+1976-06-01 while the record starts 1962-01-02 - the first 3,592 days, 22% of
+it, have no 10Y-2Y at all. Those days fall back to **10Y-1Y**, which covers all
+16,154. The badge always names the pair actually used, so the two are labelled
+rather than silently mixed, and the same 25bp band holds on the fallback: 9.0%
+of days, 71.8% of which invert within six months against 7.6% of normally
+sloped ones.
+
+This matters because that era is not quiet. 1,126 of those days have the 10Y
+below the 1Y - the 1965-70 run and the 1973-74 inversion that ran into the
+worst postwar recession to that point, deepest at -1.88% on 1974-08-23. Before
+the fallback they were all painted green.
+
 ### Auto-Refresh
 - `data.json` updates every 15 minutes during market hours via GitHub Actions
-- Historical data (`historical_data.json`) is updated manually by running the export pipeline locally
+- `historical_data.json` and `daily_curves.json` update daily at 02:00 UTC via GitHub Actions, after FRED publishes the prior day
 
 ## Tech Stack
 
 - **Data Source**: [FRED API](https://fred.stlouisfed.org/) (Federal Reserve Economic Data)
 - **Frontend**: Vanilla HTML/CSS/JavaScript with Chart.js
 - **Backend**: Python scripts + GitHub Actions automation
-- **Hosting**: GitHub Pages (free, fast, reliable)
+- **Hosting**: Cloudflare Workers static assets (`wrangler.jsonc`), served at markets.brendanbiles.com. Every push to `main` redeploys
+- **Styling**: `brand.css`, the shared layer every brendanbiles.com site loads. It is byte-identical across market-dashboard, personal-site and token-data, so site-specific tokens belong in `style.css`, not there
 
 ## Data Pipeline
 
@@ -39,9 +82,10 @@ Runs automatically via GitHub Actions every 15 minutes on weekdays.
 - CPI Year-over-Year (`CPIAUCSL`, units=pc1)
 - Fed Funds Rate (`FEDFUNDS`)
 
-### Historical Data (manual pipeline)
-1. `backfill_historical_data.py` — populates local DuckDB from FRED
-2. `export_historical_json.py` — exports to `historical_data.json` for the dashboard
+### Historical Data (`update-historical.yml`, daily at 02:00 UTC)
+1. `backfill_historical_data.py` — populates DuckDB from FRED
+2. `export_historical_json.py` — exports `historical_data.json` (monthly curve samples, full spread and indicator series)
+3. `fetch_daily_curves.py` — exports `daily_curves.json`, the columnar daily curve history the Time Machine scrubs. Tenors start at different dates: 1Y/3Y/5Y/10Y/20Y from 1962-01-02, 7Y from 1969-07-01, 2Y from 1976-06-01, 30Y from 1977-02-15 (suspended 2002-2006), 3M/6M from 1981-09-01, 1M from 2001-07-31
 
 ## Local Development
 
@@ -84,19 +128,20 @@ Runs automatically via GitHub Actions every 15 minutes on weekdays.
    - Go to your repo → Settings → Secrets and variables → Actions
    - Add new secret: `FRED_API_KEY` with your key
 
-3. **Enable GitHub Pages**
-   - Go to Settings → Pages
-   - Source: Deploy from a branch
-   - Branch: `main` / root
-   - Save
+3. **Connect the repo to Cloudflare Workers**
+   - `wrangler.jsonc` serves the repository root, deliberately: this repo is
+     public, so every file in it is already readable on GitHub and serving it
+     adds no exposure. Credentials live in Actions secrets, never in files
+   - Every push to `main` redeploys
 
-4. **Done!** GitHub Actions will run `fetch_data.py` every 15 minutes and push updated `data.json` automatically.
+4. **Done!** GitHub Actions pushes updated `data.json` every 15 minutes, and
+   each push redeploys, so the site refreshes itself.
 
 ## Cost
 
-**$0/month** - Fully hosted on GitHub's free tier:
+**$0/month**:
 - GitHub Actions: 2,000 minutes/month free (this uses ~30 min/month)
-- GitHub Pages: Free for public repos
+- Cloudflare Workers: free tier
 - FRED API: Free (no rate limits for personal use)
 
 ## Design Philosophy
