@@ -32,7 +32,18 @@ a { color: var(--accent); text-underline-offset: 2px; }
    Set on --wrap rather than on .container alone, so the shared header and
    footer widen with it. Otherwise the nav sits visibly narrower than the
    content beneath it, which reads as a mistake rather than a wide canvas. */
-:root { --wrap: 84rem; }
+:root {
+  --wrap: 84rem;
+
+  /* A flat curve is neither good news nor bad, so it gets neither --pos nor
+     --neg. --chart-3 is brand.css's amber and is already tuned for both
+     surfaces (#a8560a light, #e0a458 dark), which makes the spread read as a
+     traffic light: green, amber, red. Aliased rather than hardcoded so the
+     "no colour is defined in this file" rule above still holds, and so the
+     shared brand.css stays byte-identical across the three sites that load
+     it. */
+  --flat: var(--chart-3);
+}
 
 .container {
   width: min(100% - 2.25rem, var(--wrap));
@@ -157,6 +168,7 @@ h1 {
    .positive rendering pink, which said nothing about the number. */
 .positive, .positive-value { color: var(--pos); }
 .negative, .negative-value { color: var(--neg); }
+.flat-value { color: var(--flat); }
 .neutral { color: var(--muted); }
 
 /* ---------- Charts -------------------------------------------------------- */
@@ -183,6 +195,12 @@ h1 {
   background: color-mix(in srgb, var(--neg) 12%, transparent);
   color: var(--neg);
   border: 1px solid color-mix(in srgb, var(--neg) 40%, transparent);
+}
+
+.spread-flat {
+  background: color-mix(in srgb, var(--flat) 12%, transparent);
+  color: var(--flat);
+  border: 1px solid color-mix(in srgb, var(--flat) 40%, transparent);
 }
 
 /* ---------- Controls ------------------------------------------------------ */
