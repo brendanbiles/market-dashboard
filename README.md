@@ -100,14 +100,22 @@ Runs automatically via GitHub Actions every 15 minutes on weekdays.
    pip install -r requirements.txt
    ```
 
-3. **Set your FRED API key** (get one at https://fred.stlouisfed.org/docs/api/api_key.html)
-   ```bash
-   # Windows
-   set FRED_API_KEY=your_key_here
+3. **Set your FRED API key** (get one at https://fredaccount.stlouisfed.org/apikeys)
 
-   # Mac/Linux
-   export FRED_API_KEY=your_key_here
+   ```powershell
+   # Windows - prompts for the key, hides it, stores it permanently
+   powershell -ExecutionPolicy Bypass -File setup_fred_key.ps1
    ```
+
+   ```bash
+   # Mac/Linux - session only; -s keeps it out of shell history
+   read -rs FRED_API_KEY && export FRED_API_KEY
+   ```
+
+   Do not use `set FRED_API_KEY=...` or `setx`. Both put the key on a command
+   line, which is written to shell history in plaintext, echoed to the console,
+   and captured in the transcript of any agent session that runs it. The setup
+   script takes the value through a hidden prompt so it reaches none of those.
 
 4. **Fetch current data**
    ```bash
