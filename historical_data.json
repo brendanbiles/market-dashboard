@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-09-15T07:08:48.211426",
+  "exported_at": "2026-09-16T07:09:26.172961",
   "yield_curves_monthly": [
     {
       "date": "1962-01-02",
@@ -62006,6 +62006,10 @@
     {
       "date": "2026-09-11",
       "spread": 0.33
+    },
+    {
+      "date": "2026-09-14",
+      "spread": 0.32
     }
   ],
   "economic_indicators": {
