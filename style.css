@@ -53,8 +53,17 @@ a { color: var(--accent); text-underline-offset: 2px; }
 }
 
 /* ---------- Page title ---------------------------------------------------- */
-/* The shared site header sits above this. This is the dashboard's own title. */
-header {
+/* The shared site header sits above this. This is the dashboard's own title.
+
+   Scoped to .container on purpose. A bare `header` selector also matches
+   `<header class="site-head">`, the shared header brand.css styles. That made
+   this site's header 1.25rem taller than the other two and gave it two
+   stacked bottom borders. Fixed 2026-09-17.
+
+   Any element selector added here must be checked against the furniture
+   brand.css styles: header, footer, nav, details, summary. `check-brand.ps1`
+   checks it. */
+.container > header {
   margin-bottom: 1.75rem;
   padding-bottom: 1.25rem;
   border-bottom: 1px solid var(--border);
@@ -354,7 +363,11 @@ input[type="range"]::-moz-range-thumb {
 .inversion-period strong { color: var(--text); font-weight: 600; }
 
 /* ---------- Footer -------------------------------------------------------- */
-footer {
+/* Scoped for the same reason as the page title above: a bare `footer` selector
+   would also match `<footer class="site-foot">` if the shared footer is ever
+   added to this page. It is not here today, so this changes nothing now and
+   stops it breaking later. */
+.container > footer {
   margin-top: 2.5rem;
   padding-top: 1.25rem;
   border-top: 1px solid var(--border);
@@ -362,5 +375,5 @@ footer {
   font-size: .8125rem;
 }
 
-footer a { color: var(--accent); text-decoration: none; }
-footer a:hover { text-decoration: underline; }
+.container > footer a { color: var(--accent); text-decoration: none; }
+.container > footer a:hover { text-decoration: underline; }

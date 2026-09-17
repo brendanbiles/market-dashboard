@@ -65,7 +65,27 @@ the fallback they were all painted green.
 - **Frontend**: Vanilla HTML/CSS/JavaScript with Chart.js
 - **Backend**: Python scripts + GitHub Actions automation
 - **Hosting**: Cloudflare Workers static assets (`wrangler.jsonc`), served at markets.brendanbiles.com. Every push to `main` redeploys
-- **Styling**: `brand.css`, the shared layer every brendanbiles.com site loads. It is byte-identical across market-dashboard, personal-site and token-data, so site-specific tokens belong in `style.css`, not there
+- **Styling**: `brand.css`, the shared layer every brendanbiles.com site loads. It is identical across every site that loads it, so site-specific tokens belong in `style.css`, not there. Checked by `check-brand.ps1` below
+
+### Checking the shared brand layer
+
+`brand.css` is a **vendored copy**. The canonical file is `personal-site/public/brand.css`, published at `https://brendanbiles.com/brand.css`. Nothing at runtime links the two, on purpose: this site has to keep working if the main site is down. That also means nothing makes the copies agree, so the agreement is checked instead.
+
+```powershell
+.\check-brand.ps1           # compare against the live canonical copy
+.\check-brand.ps1 -Apply    # take the canonical version
+```
+
+Run it after touching `brand.css` or `style.css`, and after the main site changes its brand layer. It exits non-zero on a problem, so it can gate a deploy.
+
+Three things it checks:
+
+1. **Drift** between this copy of `brand.css` and the canonical one.
+2. **Collisions.** `brand.css` styles the shared header, footer and site switcher through classes on ordinary elements, so a bare `header` or `footer` rule here also restyles the shared furniture. This is the bug it was written for: on 2026-09-17 a bare `header { padding-bottom: 1.25rem; border-bottom: ... }` for the page title also matched `<header class="site-head">`, making the markets header 1.25rem taller than the other two sites and giving it two stacked bottom borders. Element selectors in `style.css` must be scoped, as `.container > header` now is.
+3. **Redefinitions** of a class `brand.css` already defines. Token overrides such as `--wrap` are reported and allowed.
+
+`check-brand.ps1` is itself a vendored copy of `personal-site/check-brand.ps1` and needs no edits: it finds its own paths. It never goes in a served directory.
+
 
 ## Data Pipeline
 
