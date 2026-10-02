@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-10-02T08:14:08.353208+00:00",
+  "last_updated": "2026-10-02T15:36:26.384359+00:00",
   "yield_curve": {
     "1M": 4.02,
     "3M": 4.2,
@@ -30,8 +30,8 @@
   "spread_10y_2y": 0.41,
   "economic": {
     "unemployment": {
-      "value": 4.1,
-      "date": "2026-08-01"
+      "value": 4.2,
+      "date": "2026-09-01"
     },
     "cpi_yoy": {
       "value": 3.35302,
